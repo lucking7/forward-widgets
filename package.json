@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests/*.test.js && node test-danmu-select-flow.js --strict-runtime",
     "test:danmu": "node --test tests/danmu-select.test.js",
+    "test:flow": "node test-danmu-select-flow.js",
+    "test:live": "node test-danmu-select-live.js",
+    "test:runtime": "node test-danmu-select-flow.js --strict-runtime",
     "check": "node --check widgets/danmu/danmu-select.js"
   },
   "engines": {

@@ -34,8 +34,8 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/da
 
 - `minConfidence` 控制匹配准确率门槛。
 - `minQuality` 控制何时启用 Lily 深度兜底。
-- `fastTimeout` 限制快速层预算。
-- `requestTimeout` 是一次调用的总上限。
+- `fastTimeout` 控制是否继续启动快速层后续步骤。
+- `requestTimeout` 控制是否继续启动深度回退等后续步骤；已发出的请求由 Forward 原生网络层负责超时。
 - `quality` 为推荐策略，`fallback` 和 `merge` 用于兼容既有使用方式。
 
 详细参数与行为见 [弹幕优选说明](widgets/danmu/danmu-select.md)，源精简依据见 [弹幕源策略](docs/source-strategy.md)。
@@ -51,10 +51,13 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/da
 
 ```bash
 npm test
+npm run test:flow
+npm run test:live
+npm run test:runtime
 npm run check
 ```
 
-项目使用 Node.js 内置测试运行器，没有运行时 npm 依赖。
+项目使用 Node.js 内置测试运行器，没有运行时 npm 依赖。`test:flow` 按官方三段流程离线回测，`test:runtime` 在不注入 Node timer 的严格 Forward VM 中执行同一流程。`test:live` 会请求当前默认第三方实例，只用于手动 smoke test，不纳入默认测试。
 
 ## License
 

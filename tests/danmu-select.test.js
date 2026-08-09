@@ -9,11 +9,9 @@ function loadWidget(overrides = {}) {
   const source = fs.readFileSync(filename, "utf8");
   const context = {
     URL,
-    clearTimeout,
     console,
     decodeURIComponent,
     encodeURIComponent,
-    setTimeout,
     ...overrides,
   };
   context.globalThis = context;
@@ -105,38 +103,6 @@ test("movie type matching is case insensitive", () => {
   ], identity);
 
   assert.equal(ranked[0].animeId, 2);
-});
-
-test("collects useful fast results within a grace window without waiting for a slow source", async () => {
-  const { collectUsefulWithin } = loadWidget();
-  const delayed = (delay, value) => new Promise((resolve) => setTimeout(() => resolve(value), delay));
-  const startedAt = Date.now();
-
-  const results = await collectUsefulWithin(
-    [delayed(5, "primary"), delayed(8, "backup"), delayed(100, "slow")],
-    {
-      graceMs: 15,
-      isUseful: (value) => Boolean(value),
-      totalTimeoutMs: 80,
-    },
-  );
-
-  assert.deepEqual(Array.from(results), ["primary", "backup"]);
-  assert.ok(Date.now() - startedAt < 70);
-});
-
-test("withTimeout treats a zero remaining budget as an immediate timeout", async () => {
-  const { collectUsefulWithin, firstUsefulHedged, withTimeout } = loadWidget();
-  const startedAt = Date.now();
-
-  await assert.rejects(withTimeout(new Promise(() => {}), 0), /请求超时/);
-  assert.deepEqual(Array.from(await collectUsefulWithin([
-    new Promise(() => {}),
-  ], { totalTimeoutMs: 0 })), []);
-  assert.equal(await firstUsefulHedged([
-    () => new Promise(() => {}),
-  ], { totalTimeoutMs: 0 }), null);
-  assert.ok(Date.now() - startedAt < 30);
 });
 
 test("route IDs preserve ordered fallback sources and tolerate malformed legacy IDs", () => {
@@ -318,6 +284,107 @@ test("search excludes candidates below the configured confidence floor", async (
 
   assert.equal(result.animes.length, 1);
   assert.equal(result.animes[0].animeTitle.startsWith("Frieren Season 2"), true);
+});
+
+test("search accepts an exact movie title with year, type, and provider suffixes", async () => {
+  const Widget = {
+    http: {
+      async get() {
+        return {
+          data: {
+            animes: [{
+              animeId: 3052575,
+              bangumiId: "rzpyce9pmxayzvb",
+              animeTitle: "让子弹飞(2010)【电影】from tencent",
+              type: "电影",
+            }],
+          },
+        };
+      },
+    },
+  };
+  const { decodeRouteId, searchDanmu } = loadWidget({ Widget });
+
+  const result = await searchDanmu({
+    minConfidence: 65,
+    server: "https://primary.example",
+    title: "让子弹飞",
+    type: "movie",
+  });
+
+  assert.equal(result.animes.length, 1);
+  assert.equal(decodeRouteId(result.animes[0].animeId).rawId, "rzpyce9pmxayzvb");
+});
+
+test("movie detail prefers a full-title episode over a same-title clip collection", async () => {
+  const calls = [];
+  const Widget = {
+    http: {
+      async get(url) {
+        calls.push(url);
+        if (url.includes("/search/anime")) {
+          return {
+            data: {
+              animes: [
+                {
+                  animeId: 3052575,
+                  bangumiId: "clip-set",
+                  animeTitle: "让子弹飞(2010)【电影】from tencent",
+                  type: "电影",
+                },
+                {
+                  animeId: 1063,
+                  bangumiId: "full-movie",
+                  animeTitle: "让子弹飞(2010)【电影】from 360",
+                  type: "电影",
+                },
+              ],
+            },
+          };
+        }
+        if (url.includes("/bangumi/clip-set")) {
+          return {
+            data: {
+              bangumi: {
+                episodes: [
+                  { episodeId: 4101, episodeNumber: "1", episodeTitle: "精彩片段：鸿门宴" },
+                  { episodeId: 4102, episodeNumber: "2", episodeTitle: "让子弹飞 快看电影" },
+                ],
+              },
+            },
+          };
+        }
+        if (url.includes("/bangumi/full-movie")) {
+          return {
+            data: {
+              bangumi: {
+                episodes: [{ episodeId: 4201, episodeNumber: "1", episodeTitle: "让子弹飞(2010)" }],
+              },
+            },
+          };
+        }
+        if (url.includes("/comment/4201")) {
+          return { data: { comments: [{ cid: "full", m: "正片弹幕", p: "1,1,16777215" }] } };
+        }
+        if (url.includes("/comment/")) {
+          return { data: { comments: [{ cid: "clip", m: "片段弹幕", p: "1,1,16777215" }] } };
+        }
+        throw new Error(`unexpected GET ${url}`);
+      },
+    },
+    storage: { get() { return null; }, set() {} },
+  };
+  const { getCommentsById, getDetailById, searchDanmu } = loadWidget({ Widget });
+
+  const search = await searchDanmu({ server: "https://primary.example", title: "让子弹飞", type: "movie" });
+  const episodes = await getDetailById({ animeId: search.animes[0].animeId, title: "让子弹飞", type: "movie" });
+  const comments = await getCommentsById({ commentId: episodes[0].episodeId, mergeMode: "quality" });
+
+  assert.equal(calls.some((url) => url.includes("/bangumi/clip-set")), true);
+  assert.equal(calls.some((url) => url.includes("/bangumi/full-movie")), true);
+  assert.equal(calls.some((url) => url.includes("/comment/4201")), true);
+  assert.equal(calls.some((url) => url.includes("/comment/4101")), false);
+  assert.equal(comments.comments[0].m, "正片弹幕");
 });
 
 test("a fast low-confidence source does not hide a slower exact search result", async () => {
@@ -913,7 +980,7 @@ test("metadata keeps the Forward danmu contract and existing configuration names
   const { WidgetMetadata } = loadWidget();
   assert.equal(WidgetMetadata.id, "danmu.quality.select.v1");
   assert.equal(WidgetMetadata.title, "弹幕优选");
-  assert.equal(WidgetMetadata.version, "1.1.1");
+  assert.equal(WidgetMetadata.version, "1.1.2");
   assert.deepEqual(Array.from(WidgetMetadata.modules, (module) => module.id), [
     "searchDanmu",
     "getDetail",
@@ -926,17 +993,19 @@ test("metadata keeps the Forward danmu contract and existing configuration names
   ]) {
     assert.equal(names.has(name), true, `missing global param ${name}`);
   }
+  assert.equal(names.has("graceMs"), false);
+  assert.equal(names.has("hedgeMs"), false);
   assert.equal(WidgetMetadata.requiredVersion, "0.0.2");
 });
 
 test("comment processing converts before blocking and rewrites white deterministically", async () => {
   const Widget = {
     storage: {
-      async get(key) {
+      get(key) {
         assert.equal(key, "smart_dict_t2s");
         return JSON.stringify({ "臺": "台", "灣": "湾", "廣": "广" });
       },
-      async set() {},
+      set() {},
     },
   };
   const { processComments } = loadWidget({ Widget });
@@ -976,7 +1045,7 @@ test("a stalled conversion dictionary cannot block comment delivery", async () =
   assert.equal(result.comments[0].m, "臺灣");
 });
 
-test("comment fetching and conversion share one end-to-end deadline", async () => {
+test("cold conversion warmup does not extend comment delivery", async () => {
   const Widget = {
     http: {
       async get(url) {
@@ -1030,7 +1099,7 @@ test("automatic detail reuses a fresh inherited series match before calling matc
       },
     },
     storage: {
-      async get(key) {
+      get(key) {
         assert.equal(key, "smart_match_frieren_s2_tunknown_tmdbnone");
         return JSON.stringify({
           animeId: "42",
@@ -1039,7 +1108,7 @@ test("automatic detail reuses a fresh inherited series match before calling matc
           sourceFingerprint: "https://primary.example",
         });
       },
-      async set() {},
+      set() {},
     },
   };
   const { getDetailById } = loadWidget({ Widget });
@@ -1060,8 +1129,8 @@ test("inherited match cache is isolated by media type and configured sources", a
   const values = new Map();
   const Widget = {
     storage: {
-      async get(key) { return values.get(key) || null; },
-      async set(key, value) { values.set(key, value); },
+      get(key) { return values.get(key) || null; },
+      set(key, value) { values.set(key, value); },
     },
   };
   const { parseMediaIdentity, recallMatch, rememberMatch } = loadWidget({ Widget });
@@ -1239,7 +1308,7 @@ test("automatic detail continues research when a matched bangumi has no episodes
   assert.equal(calls.some((url) => url.includes("/api/v2/search/anime")), true);
 });
 
-test("automatic detail treats requestTimeout as one end-to-end deadline", async () => {
+test("automatic detail does not start new stages after the shared launch budget", async () => {
   const delay = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 60));
   const Widget = {
     http: {
@@ -1429,6 +1498,44 @@ test("quality mode chooses the better fast comment set instead of the first resp
 
   assert.equal(result.count, 24);
   assert.equal(result.comments.every((comment) => comment.m.startsWith("剧情评论")), true);
+});
+
+test("the public danmu flow handles a very large comment set without overflowing", async () => {
+  const largeComments = Array.from({ length: 140000 }, (_, index) => ({
+    cid: `large-${index}`,
+    m: `剧情评论 ${index}`,
+    p: `${index / 10},1,16777215`,
+  }));
+  const Widget = {
+    http: {
+      async get(url) {
+        if (url.includes("/search/anime")) {
+          return { data: { animes: [{ animeId: 42, animeTitle: "Large Movie", type: "Movie" }] } };
+        }
+        if (url.includes("/bangumi/42")) {
+          return {
+            data: {
+              bangumi: {
+                episodes: [{ episodeId: 4201, episodeNumber: "1", episodeTitle: "Large Movie" }],
+              },
+            },
+          };
+        }
+        if (url.includes("/comment/4201")) return { data: { comments: largeComments } };
+        throw new Error(`unexpected GET ${url}`);
+      },
+    },
+    storage: { get() { return null; }, set() {} },
+  };
+  const { getCommentsById, getDetailById, searchDanmu } = loadWidget({ Widget });
+
+  const search = await searchDanmu({ server: "https://primary.example", title: "Large Movie", type: "movie" });
+  const episodes = await getDetailById({ animeId: search.animes[0].animeId, title: "Large Movie", type: "movie" });
+  const result = await getCommentsById({ commentId: episodes[0].episodeId, maxCount: 3000 });
+
+  assert.equal(result.count, 3000);
+  assert.equal(result.comments[0].m, "剧情评论 0");
+  assert.equal(result.comments.at(-1).m, "剧情评论 139999");
 });
 
 test("quality mode skips Lily when a fast source is good enough", async () => {
@@ -1786,8 +1893,8 @@ test("quality fallback scores comments after conversion and blocking", async () 
       },
     },
     storage: {
-      async get() { return JSON.stringify({ "廣": "广", "劇": "剧" }); },
-      async set() {},
+      get() { return JSON.stringify({ "廣": "广", "劇": "剧" }); },
+      set() {},
     },
   };
   const { encodeRouteId, getCommentsById, parseMediaIdentity } = loadWidget({ Widget });
