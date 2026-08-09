@@ -1,0 +1,13 @@
+{
+  "name": "forward-widgets",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:danmu": "node --test tests/danmu-smart.test.js",
+    "check": "node --check widgets/danmu/danmu-smart.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
