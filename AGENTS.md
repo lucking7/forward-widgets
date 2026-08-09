@@ -2,16 +2,18 @@
 
 ## Purpose
 
-This repository publishes Forward modules and components. The current production component is `widgets/danmu/danmu-select.js`; `widgets.fwd` is the public collection manifest.
+This repository publishes Forward modules and components. Production widgets live under `widgets/danmu/` and `widgets/douban/`; `widgets.fwd` is the public collection manifest.
 
 ## Commands
 
 - `npm test`: run every Node.js regression test.
 - `npm run test:danmu`: run the danmu suite only.
+- `npm run test:douban`: run the Douban suite only.
+- `npm run test:douban:live`: run the opt-in no-Cookie Douban smoke test.
 - `npm run test:flow`: run the deterministic search-detail-comments backtest.
 - `npm run test:live`: run an opt-in live smoke test against the configured public instances.
 - `npm run test:runtime`: run the same flow without Node timer globals.
-- `npm run check`: parse-check the production widget.
+- `npm run check`: parse-check all production widgets.
 
 No install step is required. Tests use Node.js built-ins and expect Node.js 20 or newer.
 
@@ -20,6 +22,8 @@ No install step is required. Tests use Node.js built-ins and expect Node.js 20 o
 - `widgets.fwd`: public Forward collection manifest. Keep metadata synchronized with each widget.
 - `widgets/danmu/danmu-select.js`: self-contained Forward runtime script. It cannot import npm packages.
 - `widgets/danmu/danmu-select.md`: user-facing behavior and configuration notes.
+- `widgets/douban/douban-discovery.js`: self-contained Douban discovery and strict TMDB mapping widget.
+- `widgets/douban/douban-discovery.md`: user-facing Douban behavior, privacy, and matching notes.
 - `tests/`: VM-based contract and regression tests.
 - `docs/`: dated research and architectural decisions. Clearly mark dynamic external configuration as a snapshot.
 
