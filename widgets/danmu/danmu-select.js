@@ -5,7 +5,7 @@
 WidgetMetadata = {
   id: "danmu.quality.select.v1",
   title: "弹幕优选",
-  version: "1.1.1",
+  version: "1.1.2",
   requiredVersion: "0.0.2",
   description: "准确匹配、快速源质量优选、Lily 深度兜底与确定性去重",
   author: "lucking7",
@@ -16,10 +16,8 @@ WidgetMetadata = {
     { name: "server2", title: "快速源 B 地址", type: "input", value: "https://danmu.cynn.top/cynnsq" },
     { name: "serverName3", title: "深度源名称", type: "input", value: "Lily" },
     { name: "server3", title: "深度源地址", type: "input", value: "https://danmu.longemby.com/lilyemby" },
-    { name: "requestTimeout", title: "总请求时限（毫秒）", type: "input", value: "25000" },
-    { name: "fastTimeout", title: "快速层时限（毫秒）", type: "input", value: "3500" },
-    { name: "graceMs", title: "同层收集宽限（毫秒）", type: "input", value: "650" },
-    { name: "hedgeMs", title: "兼容模式备用源等待（毫秒）", type: "input", value: "180" },
+    { name: "requestTimeout", title: "后续流程启动预算（毫秒）", type: "input", value: "25000" },
+    { name: "fastTimeout", title: "快速层启动预算（毫秒）", type: "input", value: "3500" },
     { name: "minConfidence", title: "最低匹配置信度", type: "input", value: "65" },
     { name: "minQuality", title: "快速源最低质量分", type: "input", value: "55" },
     {
@@ -74,6 +72,7 @@ const DICTIONARY_URLS = {
   t2s: "https://cdn.jsdelivr.net/npm/opencc-data@1.0.3/data/TSCharacters.txt",
 };
 const DICTIONARY_CACHE = Object.create(null);
+const DICTIONARY_PENDING = Object.create(null);
 const DANMU_COLORS = [16711680, 16776960, 16752384, 16738740, 13445375, 11730943, 11730790];
 const BUILTIN_SOURCES = [
   {
@@ -220,6 +219,9 @@ function prepareIdentityText(value) {
 
 function cleanIdentityTitle(value) {
   return prepareIdentityText(value)
+    .replace(/[（(]\s*(?:19|20)\d{2}\s*[）)]/g, " ")
+    .replace(/【[^】]*】/g, " ")
+    .replace(/\bfrom\s+[\p{L}\p{N}._-]+(?:\s.*)?$/giu, " ")
     .replace(/\bS\d{1,2}\s*E\d{1,4}(?:\.\d+)?\b/gi, " ")
     .replace(/\bSeason\s*\d{1,2}\s*Episode\s*\d{1,4}(?:\.\d+)?\b/gi, " ")
     .replace(/\bSeason\s*\d{1,2}\b/gi, " ")
@@ -378,50 +380,13 @@ function normalizeTimeoutMs(value, fallbackMs = 3000) {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : fallbackMs;
 }
 
-function collectUsefulWithin(promises, options = {}) {
+async function collectSettledUseful(promises, options = {}) {
   const isUseful = options.isUseful || ((value) => value !== null && value !== undefined);
-  const shouldStartGrace = options.shouldStartGrace || isUseful;
-  const graceMs = Math.max(0, Number(options.graceMs) || 0);
   const totalTimeoutMs = normalizeTimeoutMs(options.totalTimeoutMs);
   const tasks = Array.isArray(promises) ? promises : [];
-
-  return new Promise((resolve) => {
-    const results = new Array(tasks.length);
-    const settled = new Array(tasks.length).fill(false);
-    let settledCount = 0;
-    let graceTimer = null;
-    let finished = false;
-
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(totalTimer);
-      if (graceTimer) clearTimeout(graceTimer);
-      resolve(results.filter((value, index) => settled[index] && isUseful(value)));
-    };
-
-    const totalTimer = setTimeout(finish, totalTimeoutMs);
-    if (!tasks.length) {
-      finish();
-      return;
-    }
-
-    tasks.forEach((task, index) => {
-      Promise.resolve(task)
-        .then((value) => {
-          results[index] = value;
-          if (!graceTimer && isUseful(value) && shouldStartGrace(value)) {
-            graceTimer = setTimeout(finish, graceMs);
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          settled[index] = true;
-          settledCount++;
-          if (settledCount === tasks.length) finish();
-        });
-    });
-  });
+  if (!tasks.length || totalTimeoutMs <= 0) return [];
+  const results = await Promise.all(tasks.map((task) => Promise.resolve(task).catch(() => null)));
+  return results.filter(isUseful);
 }
 
 async function collectTieredUseful(sources, taskFactory, options = {}) {
@@ -435,12 +400,10 @@ async function collectTieredUseful(sources, taskFactory, options = {}) {
     const budget = Math.min(getRemainingTime(deadlineAt, requestTimeout), budgetMs);
     if (!tierSources.length || budget <= 0) return [];
     const stageDeadlineAt = Date.now() + budget;
-    return collectUsefulWithin(
+    return collectSettledUseful(
       tierSources.map((source) => taskFactory(source, stageDeadlineAt)),
       {
-        graceMs: options.graceMs,
         isUseful: options.isUseful,
-        shouldStartGrace: options.shouldStartGrace,
         totalTimeoutMs: budget,
       },
     );
@@ -452,69 +415,20 @@ async function collectTieredUseful(sources, taskFactory, options = {}) {
   return { results: deepResults, tier: "deep" };
 }
 
-function firstUsefulHedged(taskFactories, options = {}) {
+async function firstUsefulSequential(taskFactories, options = {}) {
   const tasks = Array.isArray(taskFactories) ? taskFactories : [];
   const isUseful = options.isUseful || ((value) => value !== null && value !== undefined);
-  const hedgeMs = Math.max(0, Number(options.hedgeMs) || 0);
   const totalTimeoutMs = normalizeTimeoutMs(options.totalTimeoutMs);
-
-  return new Promise((resolve) => {
-    let activeCount = 0;
-    let finished = false;
-    let launchTimer = null;
-    let nextIndex = 0;
-
-    const finish = (value) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(totalTimer);
-      if (launchTimer) clearTimeout(launchTimer);
-      resolve(value);
-    };
-
-    const settleMiss = () => {
-      activeCount--;
-      if (finished) return;
-      if (nextIndex < tasks.length) {
-        if (launchTimer) clearTimeout(launchTimer);
-        launchTimer = null;
-        launchNext();
-      } else if (activeCount === 0) {
-        finish(null);
-      }
-    };
-
-    const scheduleNext = () => {
-      if (finished || launchTimer || nextIndex >= tasks.length) return;
-      launchTimer = setTimeout(() => {
-        launchTimer = null;
-        launchNext();
-      }, hedgeMs);
-    };
-
-    const launchNext = () => {
-      if (finished || nextIndex >= tasks.length) return;
-      const factory = tasks[nextIndex++];
-      activeCount++;
-      scheduleNext();
-      Promise.resolve()
-        .then(() => factory())
-        .then((value) => {
-          if (isUseful(value)) {
-            finish(value);
-            return;
-          }
-          settleMiss();
-        }, settleMiss);
-    };
-
-    const totalTimer = setTimeout(() => finish(null), totalTimeoutMs);
-    if (!tasks.length) {
-      finish(null);
-      return;
-    }
-    launchNext();
-  });
+  if (!tasks.length || totalTimeoutMs <= 0) return null;
+  const deadlineAt = Date.now() + totalTimeoutMs;
+  for (const factory of tasks) {
+    if (getRemainingTime(deadlineAt, totalTimeoutMs) <= 0) return null;
+    try {
+      const value = await factory();
+      if (isUseful(value)) return value;
+    } catch (_) {}
+  }
+  return null;
 }
 
 function getCommentMessage(comment) {
@@ -548,21 +462,53 @@ function getCommentBodyKey(comment) {
   return `body:${getCommentTime(comment).toFixed(3)}|${position}|${color}|${getCommentMessage(comment)}`;
 }
 
+function parseConversionMap(text) {
+  if (typeof text !== "string") return null;
+  const map = Object.create(null);
+  for (const line of text.split("\n")) {
+    const [from, to] = line.trim().split(/\s+/);
+    if (from && to) map[from] = to;
+  }
+  return Object.keys(map).length ? map : null;
+}
+
+function setStorageBestEffort(key, value) {
+  if (!Widget.storage || typeof Widget.storage.set !== "function") return;
+  try {
+    const result = Widget.storage.set(key, value);
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  } catch (_) {}
+}
+
+function warmConversionMap(mode, storageKey) {
+  if (DICTIONARY_PENDING[mode] || !Widget.http || typeof Widget.http.get !== "function") return;
+  try {
+    DICTIONARY_PENDING[mode] = Promise.resolve(Widget.http.get(DICTIONARY_URLS[mode]))
+      .then((response) => {
+        const text = response && response.data !== undefined ? response.data : response;
+        const map = parseConversionMap(text);
+        if (!map) return null;
+        DICTIONARY_CACHE[mode] = map;
+        setStorageBestEffort(storageKey, JSON.stringify(map));
+        return map;
+      })
+      .catch(() => null)
+      .finally(() => {
+        delete DICTIONARY_PENDING[mode];
+      });
+  } catch (_) {}
+}
+
 async function loadConversionMap(mode, timeoutMs) {
   if (!DICTIONARY_URLS[mode]) return null;
   const explicitTimeout = Number(timeoutMs);
   if (Number.isFinite(explicitTimeout) && explicitTimeout <= 0) return null;
-  const timeoutBudget = Number.isFinite(explicitTimeout) ? explicitTimeout : 2500;
-  const deadlineAt = Date.now() + timeoutBudget;
   if (DICTIONARY_CACHE[mode]) return DICTIONARY_CACHE[mode];
   const storageKey = `smart_dict_${mode}`;
   if (Widget.storage && typeof Widget.storage.get === "function") {
     try {
-      const stored = await withTimeout(
-        Widget.storage.get(storageKey),
-        getRemainingTime(deadlineAt, timeoutBudget),
-      );
-      if (stored) {
+      const stored = Widget.storage.get(storageKey);
+      if (stored && typeof stored.then !== "function") {
         const parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
         if (parsed && typeof parsed === "object") {
           DICTIONARY_CACHE[mode] = parsed;
@@ -571,36 +517,8 @@ async function loadConversionMap(mode, timeoutMs) {
       }
     } catch (_) {}
   }
-  if (getRemainingTime(deadlineAt, timeoutBudget) <= 0) return null;
-  if (!Widget.http || typeof Widget.http.get !== "function") return null;
-  try {
-    const response = await withTimeout(
-      Widget.http.get(DICTIONARY_URLS[mode]),
-      getRemainingTime(deadlineAt, timeoutBudget),
-    );
-    const text = response && response.data !== undefined ? response.data : response;
-    if (typeof text !== "string") return null;
-    const map = Object.create(null);
-    for (const line of text.split("\n")) {
-      const [from, to] = line.trim().split(/\s+/);
-      if (from && to) map[from] = to;
-    }
-    DICTIONARY_CACHE[mode] = map;
-    if (Widget.storage && typeof Widget.storage.set === "function") {
-      const writeBudget = getRemainingTime(deadlineAt, timeoutBudget);
-      if (writeBudget > 0) {
-        try {
-          await withTimeout(
-            Widget.storage.set(storageKey, JSON.stringify(map)),
-            Math.min(50, writeBudget),
-          );
-        } catch (_) {}
-      }
-    }
-    return map;
-  } catch (_) {
-    return null;
-  }
+  warmConversionMap(mode, storageKey);
+  return null;
 }
 
 function convertWithMap(value, map) {
@@ -654,14 +572,30 @@ function limitCommentsEvenly(comments, maxCount) {
   });
 }
 
+function sampleCommentsEvenly(comments, maxCount) {
+  const source = Array.isArray(comments) ? comments : [];
+  const limit = Math.floor(Number(maxCount));
+  if (!Number.isFinite(limit) || limit <= 0 || source.length <= limit) return source;
+  if (limit === 1) return [source[0]];
+  return Array.from({ length: limit }, (_, index) => {
+    const sourceIndex = Math.round((index * (source.length - 1)) / (limit - 1));
+    return source[sourceIndex];
+  });
+}
+
 async function processComments(comments, options = {}) {
   const conversionMap = await loadConversionMap(options.convertMode, options.requestTimeout);
   const blocked = parseKeywordList(options.blockKeywords);
+  const outputLimit = Math.floor(Number(options.maxCount));
+  const processingLimit = Number.isFinite(outputLimit) && outputLimit > 0
+    ? Math.max(12000, outputLimit * 4)
+    : 0;
+  const inputComments = sampleCommentsEvenly(comments, processingLimit);
   const unique = [];
   const seen = new Set();
   const seenBodySources = new Map();
   const seenSourceIds = new Set();
-  for (const sourceComment of Array.isArray(comments) ? comments : []) {
+  for (const sourceComment of inputComments) {
     if (!sourceComment || typeof sourceComment !== "object") continue;
     const isSourced = !Array.isArray(sourceComment) && sourceComment.__smartComment !== undefined;
     const rawComment = isSourced ? sourceComment.__smartComment : sourceComment;
@@ -757,21 +691,10 @@ function rankSourcedAnimeCandidates(candidates, identity) {
     .map(({ _rankOrder, ...candidate }) => candidate);
 }
 
-function withTimeout(promise, timeoutMs) {
+function withinBudget(promise, timeoutMs) {
   const duration = normalizeTimeoutMs(timeoutMs);
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`请求超时 (${duration}ms)`)), duration);
-    Promise.resolve(promise).then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      },
-    );
-  });
+  if (duration <= 0) return Promise.reject(new Error(`请求超时 (${duration}ms)`));
+  return Promise.resolve(promise);
 }
 
 function getRemainingTime(deadlineAt, fallbackMs) {
@@ -788,7 +711,7 @@ async function searchSource(source, identity, params) {
   try {
     const firstBudget = getRemainingTime(params.deadlineAt, params.requestTimeout);
     if (firstBudget <= 0) throw new Error("请求时限已用尽");
-    const response = await withTimeout(
+    const response = await withinBudget(
       Widget.http.get(
         `${source.server}/api/v2/search/anime?keyword=${encodeURIComponent(query)}`,
         { headers: getRequestHeaders() },
@@ -814,7 +737,7 @@ async function searchSource(source, identity, params) {
       )) return { animes: [], source };
       const fallbackBudget = getRemainingTime(params.deadlineAt, params.requestTimeout);
       if (fallbackBudget <= 0) throw new Error("请求时限已用尽");
-      const fallback = await withTimeout(
+      const fallback = await withinBudget(
         Widget.http.get(
           `${source.server}/api/v2/search/episodes?anime=${encodeURIComponent(query)}`,
           { headers: getRequestHeaders() },
@@ -844,7 +767,6 @@ async function searchDanmu(params = {}) {
   const sources = getConfiguredSources(params);
   const requestTimeout = Math.max(100, Number(params.requestTimeout) || 25000);
   const deadlineAt = Date.now() + requestTimeout;
-  const graceMs = Math.max(0, Number(params.graceMs) || 650);
   const blocked = parseKeywordList(params.searchBlockKeywords);
   const minConfidence = Math.max(1, Number(params.minConfidence) || 65);
   const operation = { active: true };
@@ -860,14 +782,9 @@ async function searchDanmu(params = {}) {
   ), {
     deadlineAt,
     fastTimeout: params.fastTimeout,
-    graceMs,
     isUseful: (result) => result && Array.isArray(result.animes) && result.animes.some((anime) => (
       !blocked.some((keyword) => String(anime.animeTitle || "").includes(keyword))
       && scoreAnimeCandidate(anime, identity) >= minConfidence
-    )),
-    shouldStartGrace: (result) => result && Array.isArray(result.animes) && result.animes.some((anime) => (
-      !blocked.some((keyword) => String(anime.animeTitle || "").includes(keyword))
-      && scoreAnimeCandidate(anime, identity) >= 100
     )),
     requestTimeout,
   });
@@ -884,15 +801,27 @@ async function searchDanmu(params = {}) {
   const unique = [];
   const seen = new Set();
   const sourceIdsByKey = new Map();
+  const sourceCandidateIdsByKey = new Map();
   for (const candidate of ranked) {
     const rawId = candidate.bangumiId ?? candidate.animeId;
     if (rawId === undefined || rawId === null || !candidate._source) continue;
     const candidateIdentity = parseMediaIdentity({ title: candidate.animeTitle, type: candidate.type });
     const key = `${normalizeTitle(candidateIdentity.baseTitle)}|${candidateIdentity.season}|${isMovieType(candidate.type)}`;
     if (!sourceIdsByKey.has(key)) sourceIdsByKey.set(key, Object.create(null));
+    if (!sourceCandidateIdsByKey.has(key)) sourceCandidateIdsByKey.set(key, Object.create(null));
     const sourceIds = sourceIdsByKey.get(key);
+    const sourceCandidateIds = sourceCandidateIdsByKey.get(key);
     if (sourceIds[candidate._source.server] === undefined) {
       sourceIds[candidate._source.server] = String(rawId);
+    }
+    if (!Array.isArray(sourceCandidateIds[candidate._source.server])) {
+      sourceCandidateIds[candidate._source.server] = [];
+    }
+    if (
+      sourceCandidateIds[candidate._source.server].length < 4
+      && !sourceCandidateIds[candidate._source.server].includes(String(rawId))
+    ) {
+      sourceCandidateIds[candidate._source.server].push(String(rawId));
     }
   }
   for (const candidate of ranked) {
@@ -910,6 +839,7 @@ async function searchDanmu(params = {}) {
       animeId: encodeRouteId("anime", rawId, orderedSources, {
         confidence: candidate.matchConfidence,
         identity,
+        sourceCandidateIds: sourceCandidateIdsByKey.get(key) || {},
         sourceIds: sourceIdsByKey.get(key) || {},
       }),
       animeTitle: `${candidate.animeTitle} · ${candidate.matchConfidence}% · ${candidate._source.title}`,
@@ -921,7 +851,7 @@ async function searchDanmu(params = {}) {
 
 async function fetchBangumiEpisodes(source, animeId, requestTimeout) {
   try {
-    const response = await withTimeout(
+    const response = await withinBudget(
       Widget.http.get(`${source.server}/api/v2/bangumi/${encodeURIComponent(animeId)}`, {
         headers: getRequestHeaders(),
       }),
@@ -932,6 +862,74 @@ async function fetchBangumiEpisodes(source, animeId, requestTimeout) {
   } catch (error) {
     return { animeId: String(animeId), episodes: [], error, source };
   }
+}
+
+function scoreMovieEpisode(episode, identity, episodeCount) {
+  const title = String((episode && episode.episodeTitle) || "");
+  const normalizedTitle = normalizeTitle(title);
+  const targetTitle = normalizeTitle(identity && identity.baseTitle);
+  let score = episodeCount === 1 ? 15 : -Math.min(30, Math.max(0, episodeCount - 1) * 5);
+  if (targetTitle && normalizedTitle.includes(targetTitle)) score += 50;
+  if (/正片|完整版|完整电影|完整電影|全集|full\s*(?:movie|film)?/i.test(title)) score += 50;
+  if (/精彩片段|片段|预告|預告|花絮|解说|解說|速看|快看|混剪|剪辑|剪輯|reaction|trailer|preview|clip/i.test(title)) {
+    score -= 80;
+  }
+  return score;
+}
+
+function selectBestEpisodeResult(results, identity) {
+  const candidates = (Array.isArray(results) ? results : [])
+    .filter((result) => result && Array.isArray(result.episodes) && result.episodes.length > 0);
+  if (!isMovieType(identity && identity.type)) {
+    return candidates.sort((left, right) => (
+      Number(right.candidateConfidence || 0) - Number(left.candidateConfidence || 0)
+      || getSourcePreference(right.source) - getSourcePreference(left.source)
+    ))[0] || null;
+  }
+  return candidates.map((result) => {
+    const rankedEpisodes = result.episodes
+      .map((episode, index) => ({
+        episode,
+        index,
+        score: scoreMovieEpisode(episode, identity, result.episodes.length),
+      }))
+      .sort((left, right) => right.score - left.score || left.index - right.index);
+    return {
+      ...result,
+      episodeQualityScore: rankedEpisodes[0].score,
+      episodes: [rankedEpisodes[0].episode],
+    };
+  }).sort((left, right) => (
+    right.episodeQualityScore - left.episodeQualityScore
+    || Number(right.candidateConfidence || 0) - Number(left.candidateConfidence || 0)
+    || getSourcePreference(right.source) - getSourcePreference(left.source)
+  ))[0] || null;
+}
+
+function selectBestEpisodeResultsBySource(results, identity) {
+  const grouped = new Map();
+  for (const result of Array.isArray(results) ? results : []) {
+    if (!result || !result.source) continue;
+    const server = normalizeServer(result.source.server);
+    if (!server) continue;
+    if (!grouped.has(server)) grouped.set(server, []);
+    grouped.get(server).push(result);
+  }
+  return [...grouped.values()]
+    .map((group) => selectBestEpisodeResult(group, identity))
+    .filter(Boolean);
+}
+
+async function fetchBestBangumiForSource(source, candidateIds, requestTimeout, identity) {
+  const ids = [...new Set((Array.isArray(candidateIds) ? candidateIds : []).map(String).filter(Boolean))].slice(0, 4);
+  const results = await collectSettledUseful(
+    ids.map((animeId) => fetchBangumiEpisodes(source, animeId, requestTimeout)),
+    {
+      isUseful: (result) => result && Array.isArray(result.episodes) && result.episodes.length > 0,
+      totalTimeoutMs: requestTimeout,
+    },
+  );
+  return selectBestEpisodeResult(results, identity) || { animeId: ids[0] || "", episodes: [], source };
 }
 
 function getCandidateIdentityKey(candidate) {
@@ -949,35 +947,31 @@ async function resolveCandidateEpisodes(candidates, options = {}) {
   const best = eligible[0] || null;
   if (!best) return { animeId: "", best: null, results: [], winner: null };
   const identityKey = getCandidateIdentityKey(best);
-  const seenSources = new Set();
   const sameTitleCandidates = eligible.filter((candidate) => {
     if (getCandidateIdentityKey(candidate) !== identityKey) return false;
-    if (seenSources.has(candidate._source.server)) return false;
-    seenSources.add(candidate._source.server);
     return true;
   });
-  const results = await collectUsefulWithin(
+  const results = await collectSettledUseful(
     sameTitleCandidates.map((candidate) => fetchBangumiEpisodes(
       candidate._source,
       candidate.bangumiId ?? candidate.animeId,
       getRemainingTime(options.deadlineAt, options.requestTimeout),
-    )),
+    ).then((result) => ({ ...result, candidateConfidence: candidate.matchConfidence }))),
     {
-      graceMs: options.graceMs,
       isUseful: (result) => result && Array.isArray(result.episodes) && result.episodes.length > 0,
       totalTimeoutMs: getRemainingTime(options.deadlineAt, options.requestTimeout),
     },
   );
-  const sourceOrder = new Map(sameTitleCandidates.map((candidate, index) => [candidate._source.server, index]));
-  results.sort((left, right) => (
-    (sourceOrder.get(left.source.server) ?? Number.MAX_SAFE_INTEGER)
-    - (sourceOrder.get(right.source.server) ?? Number.MAX_SAFE_INTEGER)
-  ));
-  const winner = results[0] || null;
+  const resolutionIdentity = options.identity || parseMediaIdentity({
+    title: best.animeTitle,
+    type: best.type,
+  });
+  const selectedResults = selectBestEpisodeResultsBySource(results, resolutionIdentity);
+  const winner = selectBestEpisodeResult(selectedResults, resolutionIdentity);
   return {
     animeId: winner ? winner.animeId : String(best.bangumiId ?? best.animeId ?? ""),
     best,
-    results,
+    results: selectedResults,
     winner,
   };
 }
@@ -1019,7 +1013,7 @@ function buildMatchBody(params, identity) {
 
 async function fetchMatches(source, identity, params, requestTimeout) {
   try {
-    const response = await withTimeout(
+    const response = await withinBudget(
       Widget.http.post(
         `${source.server}/api/v2/match`,
         buildMatchBody(params, identity),
@@ -1077,24 +1071,20 @@ async function rememberMatch(identity, animeId, source, sources, timeoutMs) {
   const timeoutBudget = Number.isFinite(parsedTimeout) ? Math.max(0, parsedTimeout) : 2500;
   if (timeoutBudget <= 0) return;
   const key = getMatchCacheKey(identity);
-  try {
-    await withTimeout(
-      Widget.storage.set(key, JSON.stringify({
-        animeId: String(animeId),
-        source,
-        sourceFingerprint: getSourceFingerprint(sources || [source]),
-        savedAt: Date.now(),
-      })),
-      Math.min(50, timeoutBudget),
-    );
-  } catch (_) {}
+  setStorageBestEffort(key, JSON.stringify({
+    animeId: String(animeId),
+    source,
+    sourceFingerprint: getSourceFingerprint(sources || [source]),
+    savedAt: Date.now(),
+  }));
 }
 
 async function recallMatch(identity, sources) {
   if (!Widget.storage || typeof Widget.storage.get !== "function") return null;
   const key = getMatchCacheKey(identity);
   try {
-    const stored = await Widget.storage.get(key);
+    const stored = Widget.storage.get(key);
+    if (stored && typeof stored.then === "function") return null;
     if (!stored) return null;
     const parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
     const source = normalizeSource(parsed && parsed.source);
@@ -1117,7 +1107,6 @@ async function getDetailById(params = {}) {
   const sources = orderSourcesFromRoute(route, params);
   const requestTimeout = Math.max(100, Number(params.requestTimeout) || 25000);
   const deadlineAt = Date.now() + requestTimeout;
-  const graceMs = Math.max(0, Number(params.graceMs) || 650);
   const minConfidence = Math.max(1, Number(params.minConfidence) || 65);
   const identity = route.meta && route.meta.identity
     ? route.meta.identity
@@ -1129,35 +1118,41 @@ async function getDetailById(params = {}) {
     const sourceIds = route.meta && route.meta.sourceIds && typeof route.meta.sourceIds === "object"
       ? route.meta.sourceIds
       : {};
-    const hasSourceIds = Object.keys(sourceIds).length > 0;
-    const detailSources = hasSourceIds
-      ? sources.filter((source) => sourceIds[source.server] !== undefined)
+    const sourceCandidateIds = route.meta
+      && route.meta.sourceCandidateIds
+      && typeof route.meta.sourceCandidateIds === "object"
+      ? route.meta.sourceCandidateIds
+      : {};
+    const hasBoundIds = Object.keys(sourceIds).length > 0 || Object.keys(sourceCandidateIds).length > 0;
+    const detailSources = hasBoundIds
+      ? sources.filter((source) => (
+        sourceIds[source.server] !== undefined
+        || (Array.isArray(sourceCandidateIds[source.server]) && sourceCandidateIds[source.server].length > 0)
+      ))
       : sources.slice(0, 1);
     const tiered = await collectTieredUseful(
       detailSources,
-      (source, stageDeadlineAt) => fetchBangumiEpisodes(
+      (source, stageDeadlineAt) => fetchBestBangumiForSource(
         source,
-        sourceIds[source.server] ?? animeId,
+        sourceCandidateIds[source.server] || [sourceIds[source.server] ?? animeId],
         getRemainingTime(stageDeadlineAt, requestTimeout),
+        identity,
       ),
       {
         deadlineAt,
         fastTimeout: params.fastTimeout,
-        graceMs,
         isUseful: (result) => result && Array.isArray(result.episodes) && result.episodes.length > 0,
         requestTimeout,
       },
     );
-    const results = [...tiered.results].sort(
-      (left, right) => getSourcePreference(right.source) - getSourcePreference(left.source),
-    );
+    const results = [...tiered.results];
     episodeResults = results;
-    winner = results.find((result) => result.episodes.length > 0) || null;
+    winner = selectBestEpisodeResult(results, identity);
     if (winner) animeId = winner.animeId;
   } else {
     const inheritedBudget = getRemainingTime(deadlineAt, requestTimeout);
     const inherited = inheritedBudget > 0
-      ? await withTimeout(recallMatch(identity, sources), inheritedBudget).catch(() => null)
+      ? await withinBudget(recallMatch(identity, sources), inheritedBudget).catch(() => null)
       : null;
     if (inherited) {
       const inheritedResult = await fetchBangumiEpisodes(
@@ -1182,12 +1177,8 @@ async function getDetailById(params = {}) {
         {
           deadlineAt,
           fastTimeout: params.fastTimeout,
-          graceMs,
           isUseful: (result) => result && Array.isArray(result.matches) && result.matches.some(
             (match) => scoreAnimeCandidate(match, identity) >= minConfidence,
-          ),
-          shouldStartGrace: (result) => result && Array.isArray(result.matches) && result.matches.some(
-            (match) => scoreAnimeCandidate(match, identity) >= 100,
           ),
           requestTimeout,
         },
@@ -1198,7 +1189,7 @@ async function getDetailById(params = {}) {
       );
       const matchResolution = await resolveCandidateEpisodes(rankedMatches, {
         deadlineAt,
-        graceMs,
+        identity,
         minConfidence,
         requestTimeout,
       });
@@ -1232,12 +1223,8 @@ async function getDetailById(params = {}) {
           {
             deadlineAt,
             fastTimeout: params.fastTimeout,
-            graceMs,
             isUseful: (result) => result && Array.isArray(result.animes) && result.animes.some(
               (anime) => scoreAnimeCandidate(anime, identity) >= minConfidence,
-            ),
-            shouldStartGrace: (result) => result && Array.isArray(result.animes) && result.animes.some(
-              (anime) => scoreAnimeCandidate(anime, identity) >= 100,
             ),
             requestTimeout,
           },
@@ -1249,7 +1236,7 @@ async function getDetailById(params = {}) {
         );
         const researchResolution = await resolveCandidateEpisodes(rankedResearch, {
           deadlineAt,
-          graceMs,
+          identity,
           minConfidence,
           requestTimeout,
         });
@@ -1303,7 +1290,8 @@ function isLikelyLowValueComment(message) {
 }
 
 function scoreCommentSet(comments, source, options = {}) {
-  const rawComments = Array.isArray(comments) ? comments : [];
+  const allComments = Array.isArray(comments) ? comments : [];
+  const rawComments = sampleCommentsEvenly(allComments, 12000);
   if (!rawComments.length) return 0;
   const blocked = parseKeywordList(options.blockKeywords);
   const valid = rawComments.map((comment) => {
@@ -1323,15 +1311,20 @@ function scoreCommentSet(comments, source, options = {}) {
   const uniqueBodies = new Set(valid.map((item) => getCommentBodyKey(item.comment)));
   const cleanCount = valid.filter((item) => !isLikelyLowValueComment(item.message)).length;
   const buckets = new Set(valid.map((item) => Math.floor(item.time / 60)));
-  const times = valid.map((item) => item.time);
-  const span = Math.max(...times) - Math.min(...times);
+  let minTime = Infinity;
+  let maxTime = -Infinity;
+  for (const item of valid) {
+    if (item.time < minTime) minTime = item.time;
+    if (item.time > maxTime) maxTime = item.time;
+  }
+  const span = maxTime - minTime;
   const validRate = valid.length / rawComments.length;
   const uniqueRate = uniqueBodies.size / valid.length;
   const cleanRate = cleanCount / valid.length;
   const coverage = Math.min(1, buckets.size / 12);
   const spread = valid.length > 1 ? Math.min(1, span / 1200) : 0;
   const timelineRate = (coverage + spread) / 2;
-  const volumeRate = Math.min(1, Math.log(valid.length + 1) / Math.log(2001));
+  const volumeRate = Math.min(1, Math.log(allComments.length + 1) / Math.log(2001));
   const sourcePrior = getSourcePreference(source) / 100;
   return Math.round(100 * (
     validRate * 0.15
@@ -1366,7 +1359,7 @@ async function prepareCommentResultsForQuality(results, params, deadlineAt, requ
     const processed = await processComments(result.comments, {
       ...params,
       colorMode: "none",
-      maxCount: 0,
+      maxCount: 12000,
       requestTimeout: Math.min(800, remaining),
     });
     prepared.push({ ...result, comments: processed.comments });
@@ -1467,7 +1460,7 @@ async function discoverDeepCommentResult(source, route, params, deadlineAt, requ
 
 async function fetchCommentsFromSource(source, commentId, params, requestTimeout) {
   try {
-    const response = await withTimeout(
+    const response = await withinBudget(
       Widget.http.get(
         `${source.server}/api/v2/comment/${encodeURIComponent(commentId)}?async=1&withRelated=true&chConvert=0`,
         { headers: getRequestHeaders() },
@@ -1508,10 +1501,9 @@ async function getCommentsById(params = {}) {
   if (mergeMode === "merge") {
     const tiers = partitionSourcesByTier(requestSources);
     const mergeSources = tiers.fast.length ? tiers.fast : tiers.deep;
-    const results = await collectUsefulWithin(
+    const results = await collectSettledUseful(
       mergeSources.map((source) => makeTask(source)()),
       {
-        graceMs: Math.max(0, Number(params.graceMs) || 250),
         isUseful: (result) => result && Array.isArray(result.comments) && result.comments.length > 0,
         totalTimeoutMs: getRemainingTime(deadlineAt, requestTimeout),
       },
@@ -1522,10 +1514,9 @@ async function getCommentsById(params = {}) {
       __smartSource: result.source.server,
     })));
   } else if (mergeMode === "fallback") {
-    const result = await firstUsefulHedged(
+    const result = await firstUsefulSequential(
       requestSources.map(makeTask),
       {
-        hedgeMs: Math.max(0, Number(params.hedgeMs) || 120),
         isUseful: (candidate) => candidate && Array.isArray(candidate.comments) && candidate.comments.length > 0,
         totalTimeoutMs: getRemainingTime(deadlineAt, requestTimeout),
       },
@@ -1541,12 +1532,10 @@ async function getCommentsById(params = {}) {
     const minQualityValue = Number(params.minQuality);
     const minQuality = Number.isFinite(minQualityValue) ? Math.max(0, minQualityValue) : 55;
     const rawFastResults = fastBudget > 0
-      ? await collectUsefulWithin(
+      ? await collectSettledUseful(
         fast.map((source) => makeTask(source)()),
         {
-          graceMs: Math.max(0, Number(params.graceMs) || 650),
           isUseful: (result) => result && Array.isArray(result.comments) && result.comments.length > 0,
-          shouldStartGrace: () => false,
           totalTimeoutMs: fastBudget,
         },
       )
@@ -1561,18 +1550,16 @@ async function getCommentsById(params = {}) {
     let candidates = fastResults;
     if (!bestFast || bestFast.qualityScore < minQuality) {
       const rawDeepResults = deep.length
-        ? await collectUsefulWithin(
+        ? await collectSettledUseful(
           deep.map((source) => makeTask(source)()),
           {
-            graceMs: Math.max(0, Number(params.graceMs) || 650),
             isUseful: (result) => result && Array.isArray(result.comments) && result.comments.length > 0,
-            shouldStartGrace: () => false,
             totalTimeoutMs: getRemainingTime(deadlineAt, requestTimeout),
           },
         )
         : [];
       const rawDiscoveredResults = unmappedDeep.length && getRemainingTime(deadlineAt, requestTimeout) > 0
-        ? await collectUsefulWithin(
+        ? await collectSettledUseful(
           unmappedDeep.map((source) => discoverDeepCommentResult(
             source,
             route,
@@ -1581,9 +1568,7 @@ async function getCommentsById(params = {}) {
             requestTimeout,
           )),
           {
-            graceMs: Math.max(0, Number(params.graceMs) || 650),
             isUseful: (result) => result && Array.isArray(result.comments) && result.comments.length > 0,
-            shouldStartGrace: () => false,
             totalTimeoutMs: getRemainingTime(deadlineAt, requestTimeout),
           },
         )
