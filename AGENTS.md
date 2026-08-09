@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository publishes Forward modules and components. The current production component is `widgets/danmu/danmu-smart.js`; `widgets.fwd` is the public collection manifest.
+This repository publishes Forward modules and components. The current production component is `widgets/danmu/danmu-select.js`; `widgets.fwd` is the public collection manifest.
 
 ## Commands
 
@@ -15,8 +15,8 @@ No install step is required. Tests use Node.js built-ins and expect Node.js 20 o
 ## Layout
 
 - `widgets.fwd`: public Forward collection manifest. Keep metadata synchronized with each widget.
-- `widgets/danmu/danmu-smart.js`: self-contained Forward runtime script. It cannot import npm packages.
-- `widgets/danmu/danmu-smart.md`: user-facing behavior and configuration notes.
+- `widgets/danmu/danmu-select.js`: self-contained Forward runtime script. It cannot import npm packages.
+- `widgets/danmu/danmu-select.md`: user-facing behavior and configuration notes.
 - `tests/`: VM-based contract and regression tests.
 - `docs/`: dated research and architectural decisions. Clearly mark dynamic external configuration as a snapshot.
 

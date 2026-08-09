@@ -1,6 +1,6 @@
 # Forward 模块/组件
 
-一个面向 Forward 的模块与组件仓库。当前首个组件是“智能弹幕”，后续可以继续增加影视榜单、工具和其他 Widget。
+一个面向 Forward 的模块与组件仓库。当前首个组件是“弹幕优选”，后续可以继续增加影视榜单、工具和其他 Widget。
 
 ## 安装
 
@@ -10,15 +10,15 @@
 https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets.fwd
 ```
 
-也可以只导入智能弹幕：
+也可以只导入弹幕优选：
 
 ```text
-https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/danmu-smart.js
+https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/danmu-select.js
 ```
 
 要求 Forward `>= 0.0.2`。
 
-## 智能弹幕
+## 弹幕优选
 
 默认启用三个互补实例，不把配置位置当成固定优先级：
 
@@ -38,7 +38,7 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/da
 - `requestTimeout` 是一次调用的总上限。
 - `quality` 为推荐策略，`fallback` 和 `merge` 用于兼容既有使用方式。
 
-详细参数与行为见 [智能弹幕说明](widgets/danmu/danmu-smart.md)，源精简依据见 [弹幕源策略](docs/source-strategy.md)。
+详细参数与行为见 [弹幕优选说明](widgets/danmu/danmu-select.md)，源精简依据见 [弹幕源策略](docs/source-strategy.md)。
 
 ## 隐私与可用性
 

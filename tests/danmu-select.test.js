@@ -5,7 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 function loadWidget(overrides = {}) {
-  const filename = path.join(__dirname, "../widgets/danmu/danmu-smart.js");
+  const filename = path.join(__dirname, "../widgets/danmu/danmu-select.js");
   const source = fs.readFileSync(filename, "utf8");
   const context = {
     URL,
@@ -911,6 +911,9 @@ test("merge mode preserves distinct tuple comments from each source", async () =
 
 test("metadata keeps the Forward danmu contract and existing configuration names", () => {
   const { WidgetMetadata } = loadWidget();
+  assert.equal(WidgetMetadata.id, "danmu.quality.select.v1");
+  assert.equal(WidgetMetadata.title, "弹幕优选");
+  assert.equal(WidgetMetadata.version, "1.1.1");
   assert.deepEqual(Array.from(WidgetMetadata.modules, (module) => module.id), [
     "searchDanmu",
     "getDetail",

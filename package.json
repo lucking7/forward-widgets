@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "test:danmu": "node --test tests/danmu-smart.test.js",
-    "check": "node --check widgets/danmu/danmu-smart.js"
+    "test:danmu": "node --test tests/danmu-select.test.js",
+    "check": "node --check widgets/danmu/danmu-select.js"
   },
   "engines": {
     "node": ">=20"

@@ -3,13 +3,13 @@
   "description": "lucking7 的 Forward 模块与组件合集",
   "widgets": [
     {
-      "id": "danmu.smart.match.v1",
-      "title": "智能弹幕",
+      "id": "danmu.quality.select.v1",
+      "title": "弹幕优选",
       "description": "准确匹配、快速源质量优选、Lily 深度兜底与确定性去重",
       "requiredVersion": "0.0.2",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": "lucking7",
-      "url": "https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/danmu-smart.js"
+      "url": "https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/danmu-select.js"
     }
   ]
 }

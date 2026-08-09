@@ -1,11 +1,11 @@
 /**
- * Smart Danmu
+ * Danmu Select
  * A clean-room Forward widget focused on deterministic matching, quality selection, and bounded latency.
  */
 WidgetMetadata = {
-  id: "danmu.smart.match.v1",
-  title: "智能弹幕",
-  version: "1.1.0",
+  id: "danmu.quality.select.v1",
+  title: "弹幕优选",
+  version: "1.1.1",
   requiredVersion: "0.0.2",
   description: "准确匹配、快速源质量优选、Lily 深度兜底与确定性去重",
   author: "lucking7",
@@ -780,7 +780,7 @@ function getRemainingTime(deadlineAt, fallbackMs) {
 }
 
 function getRequestHeaders() {
-  return { "Content-Type": "application/json", "User-Agent": "ForwardWidgets/1.1.0" };
+  return { "Content-Type": "application/json", "User-Agent": "ForwardWidgets/1.1.1" };
 }
 
 async function searchSource(source, identity, params) {
