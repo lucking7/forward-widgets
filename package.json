@@ -7,10 +7,11 @@
     "test:danmu": "node --test tests/danmu-select.test.js",
     "test:douban": "node --test tests/douban-discovery.test.js",
     "test:douban:live": "node test-douban-discovery-live.js",
+    "test:trending": "node --test tests/tmdb-trending.test.js",
     "test:flow": "node test-danmu-select-flow.js",
     "test:live": "node test-danmu-select-live.js",
     "test:runtime": "node test-danmu-select-flow.js --strict-runtime",
-    "check": "node --check widgets/danmu/danmu-select.js && node --check widgets/douban/douban-discovery.js"
+    "check": "node --check widgets/danmu/danmu-select.js && node --check widgets/douban/douban-discovery.js && node --check widgets/trending/tmdb-trending.js"
   },
   "engines": {
     "node": ">=20"

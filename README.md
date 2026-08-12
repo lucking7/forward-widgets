@@ -1,6 +1,6 @@
 # Forward 模块/组件
 
-一个面向 Forward 的模块与组件仓库。当前提供“弹幕优选”和“豆瓣全景”，后续可以继续增加影视榜单、工具和其他 Widget。
+一个面向 Forward 的模块与组件仓库。当前提供“弹幕优选”“豆瓣全景”和“TMDB 影视趋势榜”，后续可以继续增加影视榜单、工具和其他 Widget。
 
 ## 安装
 
@@ -20,6 +20,12 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/da
 
 ```text
 https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/douban-discovery.js
+```
+
+TMDB 影视趋势榜组件地址：
+
+```text
+https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/trending/tmdb-trending.js
 ```
 
 要求 Forward `>= 0.0.2`。
@@ -61,6 +67,12 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/d
 
 详细参数、匹配规则和隐私边界见 [豆瓣全景说明](widgets/douban/douban-discovery.md)。
 
+## TMDB 影视趋势榜
+
+提供电影日榜、电影周榜、电视日榜和电视周榜，分别调用 TMDB 官方短周期趋势端点。该组件直接使用 Forward 内置 `Widget.tmdb`，不需要 Vercel、自建 API 或用户 API key。
+
+榜单表示 TMDB 全球趋势，不是 IMDb 排名，也不是 Netflix 等平台披露的播放量。每个条目按照 Forward 约定输出数值 `id`、`type: "tmdb"`、`mediaType` 和数值 `tmdbId`。详细说明见 [TMDB 影视趋势榜](widgets/trending/tmdb-trending.md)。
+
 ## 隐私与可用性
 
 - Alpha 当前使用明文 HTTP。按用户要求默认启用，但请求标题、文件名等匹配信息可能被链路观察或篡改，也可能受客户端网络安全策略限制。
@@ -75,6 +87,7 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/d
 npm test
 npm run test:douban
 npm run test:douban:live
+npm run test:trending
 npm run test:flow
 npm run test:live
 npm run test:runtime
