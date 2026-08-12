@@ -21,8 +21,11 @@ function loadWidget(Widget = {}, overrides = {}) {
 }
 
 test("publishes the seven stable Douban discovery modules in a strict Forward runtime", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../widgets/douban/douban-discovery.js"), "utf8");
   const context = loadWidget();
 
+  assert.match(source, /^\/\/[^\n]*\nWidgetMetadata\s*=/);
+  assert.doesNotMatch(source, /\b(?:var|let|const)\s+WidgetMetadata\b/);
   assert.deepEqual(
     Array.from(context.WidgetMetadata.modules, (module) => [module.id, module.functionName]),
     [
@@ -97,7 +100,7 @@ test("public collections paginate and select the evidence-backed TMDB result ins
     },
     tmdb: {
       async get(endpoint) {
-        assert.equal(endpoint, "/search/movie");
+        assert.equal(endpoint, "search/movie");
         return {
           results: [
             { id: 999, media_type: "movie", title: "这个杀手不太冷", original_title: "Léon", release_date: "2018-01-01" },
@@ -118,7 +121,7 @@ test("public collections paginate and select the evidence-backed TMDB result ins
   assert.match(calls[0], /count=20/);
   assert.deepEqual(
     Array.from(items, (item) => ({ id: item.id, tmdbId: item.tmdbId, type: item.type, mediaType: item.mediaType })),
-    [{ id: "101", tmdbId: 101, type: "tmdb", mediaType: "movie" }],
+    [{ id: 101, tmdbId: 101, type: "tmdb", mediaType: "movie" }],
   );
 });
 
@@ -141,7 +144,7 @@ test("every public collection has an explicit media type instead of relying on i
 
   const items = await loadPublicCollections({ collection: "oscars_97", page: 1 });
 
-  assert.deepEqual(tmdbEndpoints, ["/search/movie"]);
+  assert.deepEqual(tmdbEndpoints, ["search/movie"]);
   assert.equal(items[0].type, "douban");
   assert.equal(items[0].mediaType, "movie");
 });
