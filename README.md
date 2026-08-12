@@ -1,6 +1,6 @@
 # Forward 模块/组件
 
-一个面向 Forward 的模块与组件仓库。当前提供“弹幕优选”和“豆瓣全景”，后续可以继续增加影视榜单、工具和其他 Widget。
+一个面向 Forward 的模块与组件仓库。当前提供“弹幕优选”“豆瓣全景”“动漫加权榜”和“TMDB 影视趋势榜”，后续可以继续增加影视榜单、工具和其他 Widget。
 
 ## 安装
 
@@ -20,6 +20,20 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/danmu/da
 
 ```text
 https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/douban-discovery.js
+```
+
+动漫加权榜组件地址：
+
+```text
+https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/anime/anime-rankings.js
+```
+
+动漫榜依赖本仓库随附的 Vercel API，导入后还需填写自己部署的 HTTPS `apiBase`。
+
+TMDB 影视趋势榜组件地址：
+
+```text
+https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/trending/tmdb-trending.js
 ```
 
 要求 Forward `>= 0.0.2`。
@@ -61,6 +75,20 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/d
 
 详细参数、匹配规则和隐私边界见 [豆瓣全景说明](widgets/douban/douban-discovery.md)。
 
+## 动漫加权榜
+
+以 AniList 每小时趋势为主源，巴哈姆特半年“想看”榜为台湾繁中社区辅助信号，生成实时、24 小时日榜和 168 小时周榜。历史数据使用 EWMA 衰减，并将排名、持续出现和动量组合评分。巴哈只为严格匹配到唯一 AniList 条目的作品加权，不会将未匹配作品混入主榜。
+
+服务端使用 Vercel Cron、private Blob、滚动保留的不可变版本对象和 ETag CAS current pointer。Forward 端最多 4 并发做严格 TMDB 映射，季度续作还会核验 TMDB season 年份并保留 `seasonNumber`，歧义条目不猜测。
+
+部署、权重和 API 契约见 [动漫加权榜说明](widgets/anime/anime-rankings.md) 与 [部署架构](docs/anime-ranking-architecture.md)。
+
+## TMDB 影视趋势榜
+
+提供电影日榜、电影周榜、电视日榜和电视周榜，分别调用 TMDB 官方短周期趋势端点。该组件直接使用 Forward 内置 `Widget.tmdb`，不需要 Vercel、自建 API 或用户 API key。
+
+榜单表示 TMDB 全球趋势，不是 IMDb 排名，也不是 Netflix 等平台披露的播放量。每个条目按照 Forward 约定输出数值 `id`、`type: "tmdb"`、`mediaType` 和数值 `tmdbId`。详细说明见 [TMDB 影视趋势榜](widgets/trending/tmdb-trending.md)。
+
 ## 隐私与可用性
 
 - Alpha 当前使用明文 HTTP。按用户要求默认启用，但请求标题、文件名等匹配信息可能被链路观察或篡改，也可能受客户端网络安全策略限制。
@@ -72,16 +100,20 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/d
 ## 开发
 
 ```bash
+npm install
 npm test
 npm run test:douban
 npm run test:douban:live
+npm run test:anime
+npm run test:anime:live
+npm run test:trending
 npm run test:flow
 npm run test:live
 npm run test:runtime
 npm run check
 ```
 
-项目使用 Node.js 内置测试运行器，没有运行时 npm 依赖。`test:flow` 按官方三段流程离线回测，`test:runtime` 在不注入 Node timer 的严格 Forward VM 中执行同一流程。`test:live` 会请求当前默认第三方实例，只用于手动 smoke test，不纳入默认测试。
+项目使用 Node.js 内置测试运行器。Vercel 榜单服务运行时依赖 `@vercel/blob`，要求 Node.js 20 或更高版本。`test:flow` 按官方三段流程离线回测，`test:runtime` 在不注入 Node timer 的严格 Forward VM 中执行同一流程。所有 `*:live` 命令都会访问真实第三方服务，只用于手动 smoke test，不纳入默认测试。
 
 ## License
 

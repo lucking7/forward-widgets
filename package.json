@@ -7,12 +7,18 @@
     "test:danmu": "node --test tests/danmu-select.test.js",
     "test:douban": "node --test tests/douban-discovery.test.js",
     "test:douban:live": "node test-douban-discovery-live.js",
+    "test:anime": "node --test tests/anime-ranking-service.test.js tests/anime-rankings-widget.test.js",
+    "test:anime:live": "node test-anime-rankings-live.js",
+    "test:trending": "node --test tests/tmdb-trending.test.js",
     "test:flow": "node test-danmu-select-flow.js",
     "test:live": "node test-danmu-select-live.js",
     "test:runtime": "node test-danmu-select-flow.js --strict-runtime",
-    "check": "node --check widgets/danmu/danmu-select.js && node --check widgets/douban/douban-discovery.js"
+    "check": "node --check widgets/danmu/danmu-select.js && node --check widgets/douban/douban-discovery.js && node --check widgets/anime/anime-rankings.js && node --check widgets/trending/tmdb-trending.js && node --check api/cron/anime-rankings.js && node --check api/v1/rankings/anime/realtime.js && node --check api/v1/rankings/anime/day.js && node --check api/v1/rankings/anime/week.js && node --check api/v1/rankings/anime/meta.js && node --check lib/anime-rankings/anilist.js && node --check lib/anime-rankings/bahamut.js && node --check lib/anime-rankings/aggregate.js && node --check lib/anime-rankings/blob-store.js && node --check lib/anime-rankings/http.js && node --check lib/anime-rankings/service.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
   }
 }

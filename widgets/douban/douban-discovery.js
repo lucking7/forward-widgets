@@ -1,5 +1,5 @@
 // 豆瓣全景，公开榜单、个人列表与严格 TMDB 匹配。
-var WidgetMetadata = {
+WidgetMetadata = {
   id: "douban.discovery.v1",
   title: "豆瓣全景",
   description: "公开榜单、自定义片单、个性推荐与严格 TMDB 匹配",
@@ -343,7 +343,7 @@ function tmdbVideoItem(subject, candidate) {
   var mediaType = subject.type;
   var releaseDate = mediaType === "movie" ? candidate.release_date : candidate.first_air_date;
   return {
-    id: String(candidate.id),
+    id: Number(candidate.id),
     tmdbId: candidate.id,
     type: "tmdb",
     mediaType: mediaType,
@@ -402,7 +402,7 @@ async function mapSubjectToVideo(subject, useCache) {
     if (cached) return cached.candidate ? tmdbVideoItem(subject, cached.candidate) : doubanFallbackItem(subject);
   }
   try {
-    var response = await Widget.tmdb.get("/search/" + subject.type, {
+    var response = await Widget.tmdb.get("search/" + subject.type, {
       params: { query: subject.title, language: "zh-CN" },
     });
     var data = responseData(response);

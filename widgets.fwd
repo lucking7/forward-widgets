@@ -19,6 +19,24 @@
       "version": "1.0.0",
       "author": "lucking7",
       "url": "https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/douban-discovery.js"
+    },
+    {
+      "id": "anime.weighted.rankings.v1",
+      "title": "动漫加权榜",
+      "description": "AniList 小时趋势与巴哈姆特社区信号加权的实时、日度和周度榜单",
+      "requiredVersion": "0.0.2",
+      "version": "1.0.0",
+      "author": "lucking7",
+      "url": "https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/anime/anime-rankings.js"
+    },
+    {
+      "id": "tmdb.trending.v1",
+      "title": "TMDB 影视趋势榜",
+      "description": "TMDB 全球电影与电视日榜、周榜",
+      "requiredVersion": "0.0.2",
+      "version": "1.0.0",
+      "author": "lucking7",
+      "url": "https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/trending/tmdb-trending.js"
     }
   ]
 }
