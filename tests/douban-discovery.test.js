@@ -55,12 +55,12 @@ test("metadata exposes every public capability with unique parameter names", () 
 
   assert.deepEqual(namesById, {
     doubanPublic: ["collection", "page"],
-    doubanMovies: ["category", "recent", "classic", "underrated", "region", "genre", "sort", "page"],
-    doubanTelevision: ["category", "classic", "recent", "underrated", "genre", "sort", "page"],
+    doubanMovies: ["category", "recent", "classic", "underrated", "region", "genre", "yearly", "sort", "page"],
+    doubanTelevision: ["category", "classic", "recent", "underrated", "genre", "yearly", "sort", "page"],
     doubanRealtime: ["kind", "page"],
     doubanCustomList: ["url", "page"],
-    doubanRecommendations: ["mediaType", "category", "region", "page"],
-    doubanExplore: ["mediaType", "format", "genre", "region", "year", "platform", "tags", "minRating", "sort", "offset"],
+    doubanRecommendations: ["mediaType", "movieCategory", "movieRegion", "tvRegion", "page"],
+    doubanExplore: ["mediaType", "movieGenre", "tvGenre", "movieRegion", "tvRegion", "year", "platform", "tags", "minRating", "sort", "offset"],
     doubanInterests: ["userId", "status", "page"],
     doubanPersonalized: ["cookie", "mediaType", "page"],
     doubanPeople: ["person", "sort", "page"],
@@ -80,8 +80,8 @@ test("movie and television categories expose only their own conditional subfilte
   const { WidgetMetadata } = loadWidget();
   const movies = WidgetMetadata.modules.find((module) => module.id === "doubanMovies");
   const tv = WidgetMetadata.modules.find((module) => module.id === "doubanTelevision");
-  assert.deepEqual(Array.from(movies.params[0].enumOptions, (x) => x.title), ["全部", "近期热门", "高分经典", "冷门佳作", "地区佳作", "分类题材"]);
-  assert.deepEqual(Array.from(tv.params[0].enumOptions, (x) => x.title), ["全部", "高分经典", "近期热门", "冷门佳作", "分类题材"]);
+  assert.deepEqual(Array.from(movies.params[0].enumOptions, (x) => x.title), ["全部", "近期热门", "高分经典", "冷门佳作", "地区佳作", "分类题材", "年度榜单"]);
+  assert.deepEqual(Array.from(tv.params[0].enumOptions, (x) => x.title), ["全部", "高分经典", "近期热门", "冷门佳作", "分类题材", "年度榜单"]);
   for (const module of [movies, tv]) {
     const categories = Array.from(module.params[0].enumOptions, (x) => x.value);
     for (const param of module.params.filter((x) => x.belongTo)) {
@@ -715,4 +715,165 @@ test("TV classic and regional genre options load their exact native collections"
   assert.match(calls[1].pathname, /ECL45GQ4I\/items$/);
   assert.match(calls[2].pathname, /ECTM5JVYA\/items$/);
   assert.equal(empty.length, 0, "an empty official chart remains empty instead of inventing replacements");
+});
+
+test("recommendation ads and malformed subjects never become blank or fabricated detail cards", async () => {
+  const context = loadWidget({ http: { async get() { return { data: { items: [
+    { type: "ad", data: { id: "advert", title: "广告" } },
+    { type: "ad", id: "advert", title: "广告" },
+    { card: "subject", type: "movie", id: "123", title: "有效电影" },
+    { card: "doulist", id: "456", title: "推荐片单" },
+    { type: "movie", id: "789" },
+    { type: "movie", title: "没有 ID" },
+  ] } }; } } });
+  const items = await context.loadPreferenceExplore({ mediaType: "movie", sort: "T" });
+  assert.deepEqual(Array.from(items, (item) => item.id), ["123"]);
+  const union = await context.mapSubjects([
+    { type: "book", id: "10", title: "书" }, { type: "music", id: "11", title: "音乐" },
+    { subject: { type: "tv", id: "12", title: "剧" } },
+  ], "");
+  assert.deepEqual(Array.from(union, (item) => item.link), ["https://m.douban.com/book/10", "https://m.douban.com/music/11", "https://m.douban.com/tv/12"]);
+});
+
+test("native movie catalogue exposes all genres and maps exact collections without resorting", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { subject_collection_items: [] } }; } } });
+  const module = context.movieCatalogModule();
+  const options = (name) => Array.from(module.params.find((param) => param.name === name).enumOptions);
+  assert.equal(options("classic").filter((x) => x.value.startsWith("native:")).length, 26);
+  assert.equal(options("recent").filter((x) => x.value.startsWith("native:")).length, 12);
+  assert.equal(options("underrated").length, 19);
+  assert.equal(options("region").length, 184);
+  assert.equal(options("genre").length, 26);
+  assert.equal(options("yearly").length, 108);
+  for (const [category, title, id] of [
+    ["classic", "剧情", "film_genre_27"], ["recent", "喜剧", "ECAYN54KI"],
+    ["underrated", "喜剧", "ECLYOFOKA"], ["region", "美国·喜剧", "ECGUO62ZA"],
+    ["genre", "家庭", "film_genre_41"], ["yearly", "2025·华语", "ECE472UNY"],
+  ]) {
+    const option = options(category).find((item) => item.title === title);
+    assert.ok(option, title);
+    await context.loadMovieCatalog({ category, [category]: option.value, page: 2, sort: "R" });
+    assert.equal(calls.at(-1).pathname, "/rexxar/api/v2/subject_collection/" + id + "/items");
+    assert.equal(calls.at(-1).searchParams.get("start"), "20");
+    assert.equal(calls.at(-1).searchParams.has("sort"), false);
+  }
+  const before = calls.length;
+  await assert.rejects(context.loadMovieCatalog({ category: "classic", classic: "native:unknown" }), /不支持/);
+  assert.equal(calls.length, before);
+});
+
+test("TV recent native regional lists preserve exact collection identity", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { subject_collection_items: [] } }; } } });
+  const recent = context.tvCatalogModule().params.find((param) => param.name === "recent").enumOptions;
+  assert.equal(recent.filter((x) => x.value.startsWith("native:")).length, 5);
+  for (const [title, id] of [["大陆剧", "EC74443FY"], ["美剧", "ECFA5DI7Q"], ["日剧", "ECNA46YBA"], ["韩剧", "ECBE5CBEI"], ["欧洲剧", "EC6I5FYHA"]]) {
+    await context.loadTvCatalog({ category: "recent", recent: recent.find((x) => x.title === title).value, page: 2 });
+    assert.equal(calls.at(-1).pathname, "/rexxar/api/v2/subject_collection/" + id + "/items");
+    assert.equal(calls.at(-1).searchParams.get("start"), "20");
+  }
+});
+
+test("recommendation metadata only offers valid media-specific combinations and retains old saved parameters", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { items: [] } }; } } });
+  const module = context.WidgetMetadata.modules.find((item) => item.id === "doubanRecommendations");
+  for (const [name, type] of [["movieCategory", "movie"], ["movieRegion", "movie"], ["tvRegion", "tv"]]) {
+    const param = module.params.find((item) => item.name === name);
+    assert.equal(param.belongTo.paramName, "mediaType");
+    assert.deepEqual(Array.from(param.belongTo.value), [type]);
+  }
+  assert.equal(module.params.some((item) => item.name === "category" || item.name === "region"), false);
+  await context.loadRecommendations({ mediaType: "tv", tvRegion: "show_foreign" });
+  assert.equal(calls.at(-1).searchParams.get("category"), "show");
+  assert.equal(calls.at(-1).searchParams.get("type"), "show_foreign");
+  await context.loadRecommendations({ mediaType: "movie", movieCategory: "最新", movieRegion: "韩国" });
+  assert.equal(calls.at(-1).searchParams.get("category"), "最新");
+  assert.equal(calls.at(-1).searchParams.get("type"), "韩国");
+  await context.loadRecommendations({ mediaType: "tv", category: "show", region: "show_domestic" });
+  assert.equal(calls.at(-1).searchParams.get("type"), "show_domestic");
+});
+
+test("explore UI separates movie genres from TV formats and emits only valid built-in combinations", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { items: [] } }; } } });
+  const module = context.WidgetMetadata.modules.find((item) => item.id === "doubanExplore");
+  const get = (name) => module.params.find((item) => item.name === name);
+  assert.equal(get("movieGenre").enumOptions.length, 23);
+  assert.equal(get("tvGenre").enumOptions.length, 29);
+  assert.equal(get("movieRegion").enumOptions.length, 24);
+  assert.equal(get("tvRegion").enumOptions.length, 25);
+  assert.equal(get("format"), undefined);
+  await context.loadPreferenceExplore({ mediaType: "movie", movieGenre: "短片", movieRegion: "丹麦" });
+  assert.equal(calls.at(-1).searchParams.get("tags"), "短片,丹麦");
+  await context.loadPreferenceExplore({ mediaType: "tv", tvGenre: "综艺:真人秀", tvRegion: "国外" });
+  assert.equal(calls.at(-1).searchParams.get("tags"), "真人秀,综艺,国外");
+  assert.equal(JSON.parse(calls.at(-1).searchParams.get("selected_categories"))["形式"], "综艺");
+  await assert.rejects(context.loadPreferenceExplore({ mediaType: "tv", tvGenre: "电视剧:短片" }), /不支持/);
+});
+
+test("TV annual directory keeps every native year/category and uses original collections", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { subject_collection_items: [] } }; } } });
+  const module = context.tvCatalogModule();
+  const options = module.params.find((item) => item.name === "yearly").enumOptions;
+  assert.equal(options.length, 82);
+  assert.equal(new Set(Array.from(options, (item) => item.title.split("·")[0])).size, 12);
+  const option = options.find((item) => item.title === "2025·英美续订");
+  assert.equal(option.value, "native:ECWQ7ZJGY");
+  await context.loadTvCatalog({ category: "yearly", yearly: option.value, page: 2 });
+  assert.match(calls[0].pathname, /ECWQ7ZJGY\/items$/);
+  assert.equal(calls[0].searchParams.get("start"), "20");
+  await assert.rejects(context.loadTvCatalog({ category: "yearly", yearly: "native:unknown" }), /不支持/);
+});
+
+test("explore normalizes supported twentieth-century decades to Douban tag names", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { items: [] } }; } } });
+  for (const [year, expected] of [["1960年代", "60年代"], ["1970年代", "70年代"], ["1980年代", "80年代"], ["1990年代", "90年代"], ["2020年代", "2020年代"], ["2026", "2026"]]) {
+    await context.loadPreferenceExplore({ year });
+    assert.equal(calls.at(-1).searchParams.get("tags"), expected);
+  }
+});
+
+test("invalid annual movie selections fail before making a request", async () => {
+  let calls = 0;
+  const context = loadWidget({ http: { async get() { calls += 1; return { data: { items: [] } }; } } });
+  await assert.rejects(context.loadMovieCatalog({ category: "yearly", yearly: "2026" }), /不支持/);
+  assert.equal(calls, 0);
+});
+
+test("new filter defaults preserve saved filters while explicit all clears them", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { items: [] } }; } } });
+  await context.loadRecommendations({ mediaType: "movie", movieCategory: "", movieRegion: "", category: "冷门佳片", region: "日本" });
+  assert.equal(calls.at(-1).searchParams.get("category"), "冷门佳片");
+  assert.equal(calls.at(-1).searchParams.get("type"), "日本");
+  await context.loadRecommendations({ mediaType: "movie", movieCategory: "热门", movieRegion: "全部", category: "冷门佳片", region: "日本" });
+  assert.equal(calls.at(-1).searchParams.get("category"), "热门");
+  assert.equal(calls.at(-1).searchParams.get("type"), "全部");
+  await context.loadPreferenceExplore({ mediaType: "movie", movieGenre: "", movieRegion: "", genre: "科幻", region: "日本" });
+  assert.equal(calls.at(-1).searchParams.get("tags"), "科幻,日本");
+  await context.loadPreferenceExplore({ mediaType: "movie", movieGenre: "__all__", movieRegion: "__all__", genre: "科幻", region: "日本" });
+  assert.equal(calls.at(-1).searchParams.get("tags"), "");
+  await context.loadPreferenceExplore({ mediaType: "tv", tvGenre: "", tvRegion: "", genre: "真人秀", format: "综艺", region: "国外" });
+  assert.equal(calls.at(-1).searchParams.get("tags"), "真人秀,综艺,国外");
+  await context.loadPreferenceExplore({ mediaType: "tv", tvGenre: "__all__", tvRegion: "__all__", genre: "真人秀", format: "综艺", region: "国外" });
+  assert.equal(calls.at(-1).searchParams.get("tags"), "");
+  const module = context.WidgetMetadata.modules.find((m) => m.id === "doubanRecommendations");
+  assert.equal(module.params.find((p) => p.name === "movieCategory").value, "");
+  assert.equal(module.params.find((p) => p.name === "movieRegion").value, "");
+  assert.equal(module.params.find((p) => p.name === "tvRegion").value, "");
+});
+
+test("recent defaults stay broad instead of silently narrowing to comedy or mainland TV", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(new URL(url)); return { data: { items: [] } }; } } });
+  await context.loadMovieCatalog({ category: "recent" });
+  assert.equal(calls.at(-1).searchParams.get("category"), "热门");
+  assert.equal(calls.at(-1).searchParams.get("type"), "全部");
+  await context.loadTvCatalog({ category: "recent" });
+  assert.equal(calls.at(-1).searchParams.get("category"), "tv");
+  assert.equal(calls.at(-1).searchParams.get("type"), "tv");
 });

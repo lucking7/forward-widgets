@@ -66,14 +66,16 @@ function loadWidget() {
   }
   for (const options of [
     { category: "all" }, { category: "recent", recent: "new:日本" },
-    { category: "classic", classic: "top250" }, { category: "underrated", underrated: "全部" },
-    { category: "region", region: "法国" }, { category: "genre", genre: "科幻" },
+    { category: "classic", classic: "native:film_genre_27" }, { category: "underrated", underrated: "native:ECLYOFOKA" },
+    { category: "region", region: "native:ECGUO62ZA" }, { category: "genre", genre: "native:movie_scifi" },
+    { category: "yearly", yearly: "native:ECE472UNY" },
   ]) {
     results["movie_" + options.category] = (await context.loadMovieCatalog(options)).length;
   }
   for (const options of [
-    { category: "all" }, { category: "recent", recent: "tv_american" },
+    { category: "all" }, { category: "recent", recent: "native:ECFA5DI7Q" },
     { category: "classic", classic: "美剧" }, { category: "underrated", underrated: "美剧" }, { category: "genre", genre: "native:ECL45GQ4I" },
+    { category: "yearly", yearly: "native:ECWQ7ZJGY" },
   ]) {
     results["tv_" + options.category] = (await context.loadTvCatalog(options)).length;
   }

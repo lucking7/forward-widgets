@@ -1,0 +1,482 @@
+{
+  "capturedAt": "2026-10-18",
+  "sources": {
+    "genre_directory": "https://m.douban.com/rexxar/api/v2/subject_collection/film_genre_27?for_mobile=1",
+    "yearly_directory": "https://m.douban.com/rexxar/api/v2/subject_collection/ECE472UNY?for_mobile=1"
+  },
+  "genres": {
+    "剧情": {
+      "regions": {},
+      "classic": "film_genre_27"
+    },
+    "喜剧": {
+      "regions": {
+        "华语": "ECVUOUD7A",
+        "欧洲": "ECPQO4BPA",
+        "中国大陆": "ECKIO6SXI",
+        "美国": "ECGUO62ZA",
+        "中国香港": "ECOYO2QPA",
+        "中国台湾": "ECEAOX2BI",
+        "日本": "ECFIOT7JA",
+        "韩国": "ECOIOVQPY",
+        "英国": "EC6IOYROI",
+        "法国": "ECIEOY5UI",
+        "德国": "ECFQO5B4A",
+        "意大利": "ECREOTSEI",
+        "西班牙": "EC6UO37NQ",
+        "瑞典": "ECPMPBHBI",
+        "印度": "ECTIOYBOY",
+        "泰国": "ECAIO3EWI",
+        "加拿大": "ECYUPAHZY",
+        "澳大利亚": "ECKMOXL6Q",
+        "爱尔兰": "ECOAOZY7Y"
+      },
+      "recent": "ECAYN54KI",
+      "classic": "movie_comedy",
+      "underrated": "ECLYOFOKA"
+    },
+    "爱情": {
+      "regions": {
+        "华语": "ECOIOTUGY",
+        "欧洲": "ECUAOYUCA",
+        "中国大陆": "EC64OQVEQ",
+        "美国": "EC4EOSAQA",
+        "中国台湾": "ECWQOQO4A",
+        "日本": "ECKMOVF3Y",
+        "韩国": "ECHIOXXIQ",
+        "英国": "ECHAO4AAQ",
+        "法国": "ECTAOT7GQ",
+        "德国": "ECNIOS7EQ",
+        "意大利": "EC3UOSWUY",
+        "西班牙": "ECU4OWMMI",
+        "瑞典": "ECCEOUVAA",
+        "印度": "ECLUOQWVY",
+        "泰国": "ECYQO7YPQ",
+        "加拿大": "ECEAOXFIQ",
+        "澳大利亚": "ECOUOXYUA",
+        "爱尔兰": "ECJMO2O5Y"
+      },
+      "recent": "ECSAOJFTA",
+      "classic": "movie_love",
+      "underrated": "EC2UOKRRQ"
+    },
+    "动作": {
+      "regions": {
+        "华语": "EC2YO2M2A",
+        "欧洲": "ECHUOXOUA",
+        "美国": "ECPMPC7JA",
+        "中国台湾": "ECTMO64KY",
+        "日本": "ECBAPBW2Y",
+        "韩国": "ECWQOU2HI",
+        "英国": "ECCUPDBHQ",
+        "法国": "EC5UOWEFY",
+        "德国": "EC7AOW57Q",
+        "印度": "ECMQO4F2I",
+        "加拿大": "ECUQPDN7Y",
+        "澳大利亚": "EC4QPALEI"
+      },
+      "recent": "ECBUOLQGY",
+      "classic": "movie_action",
+      "underrated": "ECVIOHY6A"
+    },
+    "科幻": {
+      "regions": {
+        "欧洲": "ECX4O7JAA",
+        "美国": "ECDAO6XZI",
+        "日本": "ECSYOV6GY",
+        "英国": "EC4UOZQ4Y",
+        "法国": "EC3MO34NI",
+        "德国": "ECOUO2ETY",
+        "加拿大": "ECX4PAGTA",
+        "澳大利亚": "ECTAOXLWQ"
+      },
+      "recent": "ECZYOJPLI",
+      "classic": "movie_scifi",
+      "underrated": "EC2IOENJA"
+    },
+    "动画": {
+      "regions": {
+        "华语": "ECFMOYMKA",
+        "欧洲": "ECLYO57HA",
+        "美国": "EC4IPDWYI",
+        "日本": "ECLYO6JQQ",
+        "英国": "ECWUO3RJA",
+        "法国": "ECIQPF7NY",
+        "加拿大": "EC3YPB7WQ"
+      },
+      "recent": "EC3UOBDQY",
+      "classic": "film_genre_31",
+      "underrated": "ECTUO3I3A"
+    },
+    "悬疑": {
+      "regions": {
+        "华语": "ECRMOX2JI",
+        "欧洲": "ECUMPB7SA",
+        "美国": "ECJUO3L7I",
+        "中国香港": "ECV4OU2WA",
+        "日本": "ECVYOVDIA",
+        "韩国": "ECSYOYZWI",
+        "英国": "EC5YPE3OI",
+        "法国": "ECQUO7FVQ",
+        "德国": "ECZQO7KSQ",
+        "意大利": "ECVEO7MPI",
+        "西班牙": "ECAYOVXFA",
+        "加拿大": "ECYMPDCTI",
+        "澳大利亚": "ECIMOWR2I"
+      },
+      "recent": "ECPQOJP5Q",
+      "classic": "film_genre_32",
+      "underrated": "ECK4OEBJY"
+    },
+    "犯罪": {
+      "regions": {
+        "华语": "ECVUO4O4Q",
+        "欧洲": "EC5QO2HUI",
+        "中国大陆": "ECWAPHUIA",
+        "美国": "ECEAPADKY",
+        "中国香港": "EC3AOZZUY",
+        "日本": "ECVUO43DY",
+        "韩国": "ECGYO2SPA",
+        "英国": "ECVYOZNAI",
+        "法国": "ECFEPCR2A",
+        "德国": "ECVAPBWRI",
+        "意大利": "ECRMO4X7I",
+        "西班牙": "ECPAPDKZA",
+        "加拿大": "EC2MPBOOI",
+        "澳大利亚": "ECEMOZ6DI"
+      },
+      "recent": "ECLAN6LHQ",
+      "classic": "film_genre_46",
+      "underrated": "EC7EOG3RI"
+    },
+    "惊悚": {
+      "regions": {
+        "华语": "EC5MPCA7Y",
+        "欧洲": "ECTMPCZTY",
+        "美国": "ECSYO3JKQ",
+        "日本": "ECFUO25PI",
+        "韩国": "ECTMPDECI",
+        "英国": "ECU4O6QYQ",
+        "法国": "ECPMPHOMI",
+        "德国": "ECJIPH4JA",
+        "意大利": "EC2QPBTHY",
+        "西班牙": "ECLMPAEZY",
+        "瑞典": "ECMIPBWCY",
+        "印度": "ECRQPBSYI",
+        "加拿大": "ECZMPDHQI",
+        "澳大利亚": "EC7QPFMYA"
+      },
+      "recent": "ECBUOL2DA",
+      "classic": "film_genre_33",
+      "underrated": "ECY4ODRSY"
+    },
+    "冒险": {
+      "regions": {
+        "华语": "ECAUOWGNQ",
+        "欧洲": "ECW4O3GHY",
+        "美国": "ECOMON43Q",
+        "日本": "ECOUOVT2Q",
+        "英国": "ECFUORHLY",
+        "法国": "EC5YO53DI",
+        "德国": "ECMYOXC2Y",
+        "加拿大": "ECRYO5ULY",
+        "澳大利亚": "ECFIOR3MY"
+      },
+      "recent": "ECDYOE7WY",
+      "classic": "film_genre_49",
+      "underrated": "ECEMN5MLA"
+    },
+    "家庭": {
+      "regions": {},
+      "classic": "film_genre_41"
+    },
+    "儿童": {
+      "regions": {},
+      "classic": "film_genre_42"
+    },
+    "音乐": {
+      "regions": {
+        "欧洲": "ECAQO25QI",
+        "美国": "ECUAOV5NA",
+        "日本": "ECFYORPYQ",
+        "英国": "ECAQO3LYY",
+        "法国": "ECYAORESI"
+      },
+      "classic": "film_genre_39",
+      "underrated": "EC2UOKJFQ"
+    },
+    "历史": {
+      "regions": {
+        "华语": "ECV4N7YWY",
+        "欧洲": "ECIAOE4OY",
+        "美国": "ECK4OGBSA",
+        "中国香港": "ECPYOEZNY",
+        "日本": "EC54OCODY",
+        "韩国": "ECMAOINLA",
+        "英国": "ECSEOEISY",
+        "法国": "ECUMONVJQ",
+        "德国": "ECNQODGKI",
+        "意大利": "ECL4OLRCY"
+      },
+      "classic": "film_genre_44",
+      "underrated": "ECBAOKDHQ"
+    },
+    "奇幻": {
+      "regions": {
+        "华语": "EC5MOJAZY",
+        "欧洲": "ECUMOLXQY",
+        "美国": "ECVIOIPDI",
+        "中国香港": "ECUUOJIFA",
+        "日本": "ECEIOJZTQ",
+        "韩国": "ECDAOLOSI",
+        "英国": "ECRAOGHZY",
+        "法国": "EC6QOILRA",
+        "德国": "EC4YOCBLQ"
+      },
+      "classic": "film_genre_48",
+      "underrated": "ECCMOLZQA"
+    },
+    "恐怖": {
+      "regions": {
+        "华语": "EC54OE5HA",
+        "欧洲": "ECFAOK5WQ",
+        "美国": "ECGMORRUY",
+        "日本": "EC6QOMMWY",
+        "韩国": "ECFEOMHIQ",
+        "英国": "ECFUOGJDQ",
+        "法国": "ECHIOLPXA",
+        "西班牙": "ECWUOILKA",
+        "泰国": "EC2AOMMKY",
+        "加拿大": "ECVYODZIA",
+        "澳大利亚": "ECFYOIWBQ"
+      },
+      "recent": "ECV4N4FBI",
+      "classic": "film_genre_34",
+      "underrated": "ECTMOHSQY"
+    },
+    "战争": {
+      "regions": {
+        "华语": "ECWUOKOLY",
+        "欧洲": "ECUIOKO6I",
+        "美国": "ECDYONLLI",
+        "中国香港": "ECO4OUYWI",
+        "日本": "ECFYOK3AQ",
+        "韩国": "EC2UOS6AQ",
+        "英国": "ECVIOP57A",
+        "法国": "EC6UOQ3TY",
+        "德国": "ECV4OGCIA",
+        "意大利": "ECYUOU5TA",
+        "俄罗斯": "ECF4OMYDQ"
+      },
+      "recent": "EC6MOCTVQ",
+      "classic": "film_genre_45",
+      "underrated": "ECGEOIWRA"
+    },
+    "传记": {
+      "regions": {
+        "华语": "ECVYOEEUA",
+        "欧洲": "ECZIOQ6LY",
+        "美国": "ECE4OHQQY",
+        "英国": "ECNMONJTQ",
+        "法国": "ECYIOK3PY",
+        "德国": "ECAYOFADY",
+        "意大利": "ECLEOKFFQ",
+        "加拿大": "ECCUOUMXQ"
+      },
+      "recent": "EC3EOHEYY",
+      "classic": "film_genre_43",
+      "underrated": "ECRAODXXI"
+    },
+    "歌舞": {
+      "regions": {
+        "欧洲": "EC3QOS5MA",
+        "美国": "ECYQOXMSA"
+      },
+      "classic": "film_genre_40",
+      "underrated": "ECZMOHQ3Q"
+    },
+    "武侠": {
+      "regions": {
+        "华语": "ECEAOOAHI",
+        "中国大陆": "EC6YOLGQQ"
+      },
+      "classic": "film_genre_50",
+      "underrated": "ECWAOLLZQ"
+    },
+    "情色": {
+      "regions": {
+        "华语": "ECKQOVFTY",
+        "欧洲": "ECVUONKTI",
+        "美国": "ECTQOQ6XQ",
+        "日本": "ECLUOK4TA",
+        "韩国": "ECDMOZMVI",
+        "英国": "ECA4OSUNA",
+        "法国": "ECDAOW2PY",
+        "意大利": "ECM4OVMRY"
+      },
+      "classic": "film_genre_37",
+      "underrated": "ECGYN6NHI"
+    },
+    "灾难": {
+      "regions": {
+        "欧洲": "EC5IOQ75I",
+        "美国": "EC4IOWGKA"
+      },
+      "classic": "natural_disasters",
+      "underrated": "ECHMOGZLQ"
+    },
+    "西部": {
+      "regions": {
+        "欧洲": "ECM4OWDGI",
+        "美国": "ECU4ORYVI"
+      },
+      "classic": "film_genre_47"
+    },
+    "古装": {
+      "regions": {},
+      "classic": "film_genre_51"
+    },
+    "运动": {
+      "regions": {},
+      "classic": "ECCEPGM4Y"
+    },
+    "短片": {
+      "regions": {},
+      "classic": "film_genre_36"
+    }
+  },
+  "yearly": {
+    "2025": {
+      "华语": "ECE472UNY",
+      "外语": "ECB5AE5EQ",
+      "冷门佳片": "ECFM7Z3AA",
+      "日本": "ECNI724YA",
+      "韩国": "EC45ABN2Y",
+      "喜剧": "ECANAAAGY",
+      "爱情": "ECM5AC2HQ",
+      "恐怖": "ECNA72CVA",
+      "动画": "ECKU74SFA",
+      "纪录": "ECDBAETMY"
+    },
+    "2024": {
+      "华语": "ECBE7RX5A",
+      "外语": "ECBQ7RNSA",
+      "冷门佳片": "ECSE7P7GQ",
+      "日本": "ECRY73E2Q",
+      "韩国": "ECBM7NLJA",
+      "喜剧": "ECLE7RV6Y",
+      "爱情": "ECHU7QOYQ",
+      "恐怖": "ECKY7RPLQ",
+      "动画": "ECZA7V7AA",
+      "纪录": "ECS47YXRQ"
+    },
+    "2023": {
+      "华语": "ECQ46F7XI",
+      "外语": "ECFA6FLWQ",
+      "冷门佳片": "ECMY6GCCA",
+      "日本": "ECCU6MRTY",
+      "韩国": "EC4Y6ALRA",
+      "喜剧": "ECCI6H3TA",
+      "爱情": "EC3A56FJA",
+      "恐怖": "ECYI6DWVQ",
+      "动画": "ECHU6BXBI",
+      "纪录": "ECRM6A2JA"
+    },
+    "2022": {
+      "华语": "ECKA55LSA",
+      "外语": "ECQU6DFQA",
+      "冷门佳片": "ECSQ6DBYA",
+      "日本": "ECEA6ANKY",
+      "韩国": "ECHM6DG7Y",
+      "喜剧": "EC4Y54ORI",
+      "爱情": "ECYU6IHKI",
+      "恐怖": "ECRI53OUQ",
+      "动画": "EC4M6ACVQ",
+      "纪录": "ECGY527GY"
+    },
+    "2021": {
+      "华语": "ECWY6B2GQ",
+      "外语": "ECNE54UQI",
+      "冷门佳片": "ECRA53WMI",
+      "喜剧": "ECJM6BMEA",
+      "爱情": "EC6A575FI",
+      "恐怖": "ECBM5YQVA",
+      "动画": "ECOY6BCBI",
+      "纪录": "ECLY57EVQ"
+    },
+    "2020": {
+      "华语": "EC2A5MRIY",
+      "外语": "ECIU5HIEQ",
+      "冷门佳片": "ECGY5FDUA",
+      "日本": "ECCA5MMHI",
+      "韩国": "EC3A5GQ5A",
+      "喜剧": "ECM45Q7VI",
+      "爱情": "ECBA5UC6Q",
+      "恐怖": "EC7U5TVBY",
+      "动画": "ECMY5PBHI",
+      "纪录": "EC4Q5SGKQ"
+    },
+    "2019": {
+      "华语": "ECFYHQBWQ",
+      "外语": "ECFQHXCTQ",
+      "冷门佳片": "ECOUHS3TY",
+      "喜剧": "ECBU6ENLI",
+      "爱情": "ECSY52PSI",
+      "动画": "EC7E57OPQ",
+      "纪录": "ECYQ6G4WI"
+    },
+    "2018": {
+      "华语": "2018_movie_1",
+      "外语": "2018_movie_0",
+      "冷门佳片": "2018_movie_14",
+      "日本": "2018_movie_5",
+      "韩国": "2018_movie_4",
+      "喜剧": "2018_movie_16",
+      "爱情": "2018_movie_17",
+      "恐怖": "2018_movie_19",
+      "动画": "2018_movie_20",
+      "纪录": "2018_movie_21"
+    },
+    "2017": {
+      "华语": "2017_movie_chinese_score",
+      "外语": "2017_movie_foreign_score",
+      "冷门佳片": "2017_movie_dark_horse",
+      "日本": "2017_movie_696",
+      "韩国": "2017_movie_695",
+      "喜剧": "2017_movie_699",
+      "爱情": "2017_movie_700",
+      "恐怖": "2017_movie_702",
+      "纪录": "2017_movie_686"
+    },
+    "2016": {
+      "华语": "2016_movie_451",
+      "外语": "2016_movie_272",
+      "冷门佳片": "2016_movie_456",
+      "日本": "2016_movie_459",
+      "韩国": "2016_movie_458",
+      "喜剧": "2016_movie_465",
+      "爱情": "2016_movie_466",
+      "恐怖": "2016_movie_468",
+      "动画": "2016_movie_469",
+      "纪录": "2016_movie_470"
+    },
+    "2015": {
+      "华语": "2015_movie_3",
+      "外语": "2015_movie_2",
+      "冷门佳片": "2015_movie_43",
+      "日本": "2015_movie_45",
+      "韩国": "2015_movie_44",
+      "动画": "2015_movie_54",
+      "纪录": "2015_movie_55"
+    },
+    "2014": {
+      "华语": "2014_movie_2",
+      "外语": "2014_movie_1",
+      "冷门佳片": "2014_movie_5",
+      "日本": "2014_movie_7",
+      "韩国": "2014_movie_6",
+      "动画": "2014_movie_9",
+      "纪录": "2014_movie_10"
+    }
+  }
+}
