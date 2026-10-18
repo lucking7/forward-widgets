@@ -56,7 +56,7 @@ test("metadata exposes every public capability with unique parameter names", () 
   assert.deepEqual(namesById, {
     doubanPublic: ["collection", "page"],
     doubanMovies: ["category", "recent", "classic", "underrated", "region", "genre", "sort", "page"],
-    doubanTelevision: ["category", "recent", "underrated", "genre", "sort", "page"],
+    doubanTelevision: ["category", "classic", "recent", "underrated", "genre", "sort", "page"],
     doubanRealtime: ["kind", "page"],
     doubanCustomList: ["url", "page"],
     doubanRecommendations: ["mediaType", "category", "region", "page"],
@@ -81,13 +81,12 @@ test("movie and television categories expose only their own conditional subfilte
   const movies = WidgetMetadata.modules.find((module) => module.id === "doubanMovies");
   const tv = WidgetMetadata.modules.find((module) => module.id === "doubanTelevision");
   assert.deepEqual(Array.from(movies.params[0].enumOptions, (x) => x.title), ["全部", "近期热门", "高分经典", "冷门佳作", "地区佳作", "分类题材"]);
-  assert.deepEqual(Array.from(tv.params[0].enumOptions, (x) => x.title), ["全部", "近期热门", "冷门佳作", "分类题材"]);
+  assert.deepEqual(Array.from(tv.params[0].enumOptions, (x) => x.title), ["全部", "高分经典", "近期热门", "冷门佳作", "分类题材"]);
   for (const module of [movies, tv]) {
     const categories = Array.from(module.params[0].enumOptions, (x) => x.value);
     for (const param of module.params.filter((x) => x.belongTo)) {
       assert.equal(param.belongTo.paramName, "category");
-      assert.deepEqual(Array.from(param.belongTo.value), [param.name]);
-      assert.ok(categories.includes(param.name));
+      assert.equal(Array.from(param.belongTo.value).every((value) => categories.includes(value)), true);
     }
   }
   const realtime = WidgetMetadata.modules.find((module) => module.id === "doubanRealtime");
@@ -677,20 +676,43 @@ test("weekly and realtime lists select separate source collections", async () =>
   assert.equal(calls.length, 8);
 });
 
-test("TV cold picks use an explicit rating/vote filter and nonoverlapping API windows", async () => {
+test("TV cold picks use original regional charts without a local score/vote filter", async () => {
   const calls = [];
   const context = loadWidget({ http: { async get(url) {
-    calls.push(new URL(url)); return { data: { items: [
-      { card: "subject", type: "tv", id: "1", title: "小众高分", rating: { value: 8.5, count: 5000 } },
-      { card: "subject", type: "tv", id: "2", title: "热门高分", rating: { value: 9.1, count: 10001 } },
-      { card: "subject", type: "tv", id: "3", title: "人数未知", rating: { value: 8.1 } },
-      { card: "subject", type: "tv", id: "4", title: "评分不足", rating: { value: 7.9, count: 100 } },
+    calls.push(new URL(url)); return { data: { subject_collection_items: [
+      { type: "tv", id: "1", title: "原榜收录", rating: { value: 7.9, count: 99999 } },
     ] } };
   } } });
-  const items = await context.loadTvCatalog({ category: "underrated", underrated: "日本", page: 2 });
-  assert.deepEqual(Array.from(items, (item) => item.title), ["小众高分"]);
-  assert.equal(calls[0].searchParams.get("start"), "100");
-  assert.equal(calls[0].searchParams.get("count"), "100");
-  assert.equal(calls[0].searchParams.get("score_range"), "8,10");
-  assert.equal(calls[0].searchParams.get("sort"), "U");
+  const expected = { "美剧": "ECGI5HUQI", "大陆剧": "ECRI46YZQ", "日剧": "ECEA5DW5Q", "韩剧": "ECZY5IDOY" };
+  for (const [region, id] of Object.entries(expected)) {
+    const items = await context.loadTvCatalog({ category: "underrated", underrated: region, page: 2 });
+    assert.equal(items.length, 1, "keep original chart membership independent of rating or vote count");
+    const url = calls.at(-1);
+    assert.equal(url.pathname, "/rexxar/api/v2/subject_collection/" + id + "/items");
+    assert.equal(url.searchParams.get("start"), "20");
+    assert.equal(url.searchParams.has("score_range"), false);
+  }
+});
+
+test("TV classic and regional genre options load their exact native collections", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) {
+    calls.push(new URL(url)); return { data: { subject_collection_items: [] } };
+  } } });
+  const module = context.WidgetMetadata.modules.find((m) => m.id === "doubanTelevision");
+  const classics = module.params.find((p) => p.name === "classic").enumOptions;
+  const cold = module.params.find((p) => p.name === "underrated").enumOptions;
+  const genres = module.params.find((p) => p.name === "genre").enumOptions;
+  assert.equal(classics.length, 9);
+  assert.equal(cold.length, 9);
+  assert.equal(genres.length, 33);
+  const scifi = genres.find((option) => option.title === "美剧·科幻");
+  assert.equal(scifi.value, "native:ECL45GQ4I");
+  await context.loadTvCatalog({ category: "classic", classic: "美剧" });
+  await context.loadTvCatalog({ category: "genre", genre: scifi.value });
+  const empty = await context.loadTvCatalog({ category: "underrated", underrated: "欧洲剧" });
+  assert.match(calls[0].pathname, /ECVACWVGI\/items$/);
+  assert.match(calls[1].pathname, /ECL45GQ4I\/items$/);
+  assert.match(calls[2].pathname, /ECTM5JVYA\/items$/);
+  assert.equal(empty.length, 0, "an empty official chart remains empty instead of inventing replacements");
 });

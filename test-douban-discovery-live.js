@@ -73,7 +73,7 @@ function loadWidget() {
   }
   for (const options of [
     { category: "all" }, { category: "recent", recent: "tv_american" },
-    { category: "underrated", underrated: "全部" }, { category: "genre", genre: "show:真人秀" },
+    { category: "classic", classic: "美剧" }, { category: "underrated", underrated: "美剧" }, { category: "genre", genre: "native:ECL45GQ4I" },
   ]) {
     results["tv_" + options.category] = (await context.loadTvCatalog(options)).length;
   }

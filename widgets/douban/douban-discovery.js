@@ -4,7 +4,7 @@ WidgetMetadata = {
   title: "豆瓣全景",
   description: "一周口碑、电影与电视分类、实时书影音和可靠详情匹配",
   author: "lucking7",
-  version: "1.1.0",
+  version: "1.1.1",
   requiredVersion: "0.0.2",
   site: "https://github.com/lucking7/forward-widgets",
   modules: [
@@ -221,24 +221,153 @@ function movieCatalogModule() {
 }
 
 function tvCatalogModule() {
-  var genres = [["全部剧集", "tv:"], ["全部综艺", "show:"]];
-  ["喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"].forEach(function (genre) {
-    genres.push(["剧集·" + genre, "tv:" + genre]);
-  });
-  ["真人秀", "脱口秀", "音乐", "歌舞"].forEach(function (genre) { genres.push(["综艺·" + genre, "show:" + genre]); });
   return {
     id: "doubanTelevision", title: "豆瓣电视", functionName: "loadTvCatalog", type: "video", cacheDuration: 21600,
     params: [
-      choiceParam("category", "分类", [["全部", "all"], ["近期热门", "recent"], ["冷门佳作", "underrated"], ["分类题材", "genre"]]),
+      choiceParam("category", "分类", [["全部", "all"], ["高分经典", "classic"], ["近期热门", "recent"], ["冷门佳作", "underrated"], ["分类题材", "genre"]]),
+      catalogSubfilter("classic", "原生高分经典榜", nativeTvRegions("classic")),
       catalogSubfilter("recent", "近期热门", [["全部剧集", "tv"], ["大陆剧", "tv_domestic"], ["美剧 / 欧美剧", "tv_american"], ["日剧", "tv_japanese"], ["韩剧", "tv_korean"], ["动画", "tv_animation"], ["纪录片", "tv_documentary"], ["全部综艺", "show"], ["国内综艺", "show_domestic"], ["国外综艺", "show_foreign"]]),
-      Object.assign(catalogSubfilter("underrated", "高分冷门地区（筛选）", catalogRegions().concat(["国外"])), {
-        description: "从豆瓣推荐中筛选评分 ≥ 8 且评价人数 1–10000 的条目，不是豆瓣官方冷门榜",
-      }),
-      catalogSubfilter("genre", "分类题材", genres),
-      catalogSortParam(),
+      catalogSubfilter("underrated", "原生冷门佳作榜", nativeTvRegions("underrated")),
+      catalogSubfilter("genre", "原生地区题材榜", nativeTvGenreOptions()),
+      Object.assign(catalogSortParam(), { belongTo: { paramName: "category", value: ["all"] }, description: "仅用于全部；原生榜单保留豆瓣顺序" }),
       { name: "page", title: "页码", type: "page" },
     ],
   };
+}
+
+function tvNativeCharts() {
+  // Snapshot of Douban category_tabs, 2026-10-18. Kept inline for a standalone widget.
+  return {
+  "大陆剧": {
+    "genres": {
+      "喜剧": "ECVQ47BUI",
+      "爱情": "ECZM5H55I",
+      "悬疑": "ECIU5AZDA",
+      "家庭": "ECJU5D3PY",
+      "古装": "ECTU453WI",
+      "犯罪": "EC4Q5JNKI",
+      "历史": "ECN45K75A"
+    },
+    "recent": "EC74443FY",
+    "classic": "ECT45KVZI",
+    "underrated": "ECRI46YZQ"
+  },
+  "美剧": {
+    "genres": {
+      "喜剧": "ECX45ISGQ",
+      "爱情": "ECA45D3RQ",
+      "悬疑": "ECKI5JNJI",
+      "动作": "ECME44L4Y",
+      "科幻": "ECL45GQ4I",
+      "犯罪": "EC2Y5CTPA",
+      "惊悚": "ECMM5ALJQ",
+      "奇幻": "ECHU473PI",
+      "恐怖": "ECRE46B7Y"
+    },
+    "recent": "ECFA5DI7Q",
+    "classic": "ECVACWVGI",
+    "underrated": "ECGI5HUQI"
+  },
+  "英剧": {
+    "genres": {
+      "喜剧": "ECZE5BCZA",
+      "悬疑": "ECTM5HMAI",
+      "犯罪": "EC5I5EOCQ"
+    },
+    "classic": "ECVACXBWI",
+    "underrated": "ECEM4373Q"
+  },
+  "日剧": {
+    "genres": {
+      "喜剧": "ECWM5LNJI",
+      "爱情": "ECEA5D2RQ",
+      "悬疑": "ECHI5FDTQ"
+    },
+    "recent": "ECNA46YBA",
+    "classic": "ECBQCUATA",
+    "underrated": "ECEA5DW5Q"
+  },
+  "韩剧": {
+    "genres": {
+      "喜剧": "ECS45ISKI",
+      "爱情": "ECOU5ECZQ"
+    },
+    "recent": "ECBE5CBEI",
+    "classic": "EC6EC5GBQ",
+    "underrated": "ECZY5IDOY"
+  },
+  "港剧": {
+    "genres": {
+      "喜剧": "ECXI5EIII",
+      "爱情": "EC3Y5ISIQ",
+      "古装": "ECIE5FVTI",
+      "犯罪": "EC3A46RGQ"
+    },
+    "classic": "ECVM47WUA",
+    "underrated": "EC3U5ASKQ"
+  },
+  "台剧": {
+    "genres": {
+      "爱情": "ECBU5LX3A"
+    },
+    "classic": "ECBI5EL6A",
+    "underrated": "ECJQ5LAFY"
+  },
+  "泰剧": {
+    "genres": {},
+    "underrated": "EC2Y5FJTY"
+  },
+  "欧洲剧": {
+    "genres": {
+      "喜剧": "ECJQ5LPXY",
+      "爱情": "ECSA5KEKY",
+      "悬疑": "ECEU47F2I",
+      "犯罪": "ECGM5NIQA"
+    },
+    "recent": "EC6I5FYHA",
+    "classic": "ECZY5KBOQ",
+    "underrated": "ECTM5JVYA"
+  },
+  "动画剧集": {
+    "genres": {},
+    "classic": "ECR4CRXHA"
+  }
+};
+}
+
+function nativeTvRegions(category) {
+  var charts = tvNativeCharts();
+  return Object.keys(charts).filter(function (region) { return charts[region][category]; });
+}
+
+function nativeTvGenreOptions() {
+  var charts = tvNativeCharts();
+  var options = [];
+  Object.keys(charts).forEach(function (region) {
+    Object.keys(charts[region].genres).forEach(function (genre) {
+      options.push([region + "·" + genre, "native:" + charts[region].genres[genre]]);
+    });
+  });
+  return options;
+}
+
+async function loadNativeTvChart(category, selection, page) {
+  var charts = tvNativeCharts();
+  var legacyRegions = {
+    "全部": nativeTvRegions(category), "华语": ["大陆剧", "港剧", "台剧"],
+    "欧美": ["美剧", "英剧", "欧洲剧"], "国外": ["美剧", "英剧", "欧洲剧", "日剧", "韩剧"],
+    "美国": ["美剧"], "中国大陆": ["大陆剧"], "日本": ["日剧"], "韩国": ["韩剧"],
+    "英国": ["英剧"], "中国香港": ["港剧"], "中国台湾": ["台剧"],
+  };
+  var regions = charts[selection] ? [selection] : legacyRegions[selection];
+  if (regions) regions = regions.filter(function (region) { return charts[region] && charts[region][category]; });
+  if (!regions || !regions.length) throw new Error("该地区暂无原生榜单，请重新选择电视榜单地区");
+  var pages = await Promise.all(regions.map(async function (region) {
+    var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + charts[region][category] +
+      "/items?start=" + ((page - 1) * 20) + "&count=20&items_only=1&for_mobile=1";
+    return responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS })).subject_collection_items || [];
+  }));
+  return mapSubjects([].concat.apply([], pages), "tv");
 }
 
 function catalogSortParam() {
@@ -822,28 +951,31 @@ async function loadTvCatalog(params) {
   var module = tvCatalogModule();
   var category = selectedCatalogValue(module, "category", params.category);
   var page = pageNumber(params.page);
+  if (category === "classic" || category === "underrated") {
+    return loadNativeTvChart(category, params[category] || nativeTvRegions(category)[0], page);
+  }
   if (category === "recent") {
     var recent = selectedCatalogValue(module, "recent", params.recent);
     return loadRecommendations({ mediaType: "tv", category: recent.indexOf("show") === 0 ? "show" : "tv", region: recent, page: page });
   }
   var options = { mediaType: "tv", offset: (page - 1) * 20, sort: selectedCatalogValue(module, "sort", params.sort) };
   if (category === "genre") {
-    var parts = selectedCatalogValue(module, "genre", params.genre).split(":");
+    if (!params.genre || String(params.genre).indexOf("native:") === 0) {
+      var chart = selectedCatalogValue(module, "genre", params.genre).slice(7);
+      var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + chart +
+        "/items?start=" + ((page - 1) * 20) + "&count=20&items_only=1&for_mobile=1";
+      var response = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
+      return mapSubjects(response.subject_collection_items || [], "tv");
+    }
+    // Retain the 1.1.0 generic genre values saved in existing home configurations.
+    var parts = String(params.genre).split(":");
+    var legacyGenres = {
+      tv: ["", "喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"],
+      show: ["", "真人秀", "脱口秀", "音乐", "歌舞"],
+    };
+    if (parts.length !== 2 || !legacyGenres[parts[0]] || legacyGenres[parts[0]].indexOf(parts[1]) < 0) throw new Error("不支持的电视题材");
     options.format = parts[0] === "show" ? "综艺" : "电视剧";
     options.genre = parts[1];
-  }
-  if (category === "underrated") {
-    var region = selectedCatalogValue(module, "underrated", params.underrated);
-    options.region = region === "全部" ? "" : region;
-    options.minRating = "8";
-    options.sort = "U";
-    options.count = 100;
-    options.offset = (page - 1) * 100;
-    var subjects = await fetchPreferenceSubjects(options);
-    return mapSubjects(subjects.filter(function (item) {
-      var count = Number(item.rating && item.rating.count);
-      return Number(item.rating && item.rating.value) >= 8 && count > 0 && count <= 10000;
-    }), "tv");
   }
   return loadPreferenceExplore(options);
 }
@@ -856,7 +988,6 @@ async function fetchPreferenceSubjects(params) {
   if (!/^(?:[0-9])$/.test(rating)) throw new Error("最低评分必须是 0 到 9 的整数");
   var offsetValue = Number(params.offset == null ? 0 : params.offset);
   var offset = Number.isFinite(offsetValue) && offsetValue >= 0 ? Math.floor(offsetValue) : 0;
-  var count = params.count === 100 ? 100 : 20;
   var selected = {
     "类型": String(params.genre || ""),
     "地区": String(params.region || ""),
@@ -871,7 +1002,7 @@ async function fetchPreferenceSubjects(params) {
     if (uniqueTags.indexOf(tag) < 0) uniqueTags.push(tag);
   });
   var url = "https://m.douban.com/rexxar/api/v2/" + mediaType +
-    "/recommend?refresh=0&start=" + offset + "&count=" + count +
+    "/recommend?refresh=0&start=" + offset + "&count=20" +
     "&selected_categories=" + encodeURIComponent(JSON.stringify(selected)) +
     "&uncollect=false&score_range=" + encodeURIComponent(rating + ",10") +
     "&tags=" + encodeURIComponent(uniqueTags.join(",")) +
