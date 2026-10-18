@@ -1,0 +1,96 @@
+{
+  "大陆剧": {
+    "genres": {
+      "喜剧": "ECVQ47BUI",
+      "爱情": "ECZM5H55I",
+      "悬疑": "ECIU5AZDA",
+      "家庭": "ECJU5D3PY",
+      "古装": "ECTU453WI",
+      "犯罪": "EC4Q5JNKI",
+      "历史": "ECN45K75A"
+    },
+    "recent": "EC74443FY",
+    "classic": "ECT45KVZI",
+    "underrated": "ECRI46YZQ"
+  },
+  "美剧": {
+    "genres": {
+      "喜剧": "ECX45ISGQ",
+      "爱情": "ECA45D3RQ",
+      "悬疑": "ECKI5JNJI",
+      "动作": "ECME44L4Y",
+      "科幻": "ECL45GQ4I",
+      "犯罪": "EC2Y5CTPA",
+      "惊悚": "ECMM5ALJQ",
+      "奇幻": "ECHU473PI",
+      "恐怖": "ECRE46B7Y"
+    },
+    "recent": "ECFA5DI7Q",
+    "classic": "ECVACWVGI",
+    "underrated": "ECGI5HUQI"
+  },
+  "英剧": {
+    "genres": {
+      "喜剧": "ECZE5BCZA",
+      "悬疑": "ECTM5HMAI",
+      "犯罪": "EC5I5EOCQ"
+    },
+    "classic": "ECVACXBWI",
+    "underrated": "ECEM4373Q"
+  },
+  "日剧": {
+    "genres": {
+      "喜剧": "ECWM5LNJI",
+      "爱情": "ECEA5D2RQ",
+      "悬疑": "ECHI5FDTQ"
+    },
+    "recent": "ECNA46YBA",
+    "classic": "ECBQCUATA",
+    "underrated": "ECEA5DW5Q"
+  },
+  "韩剧": {
+    "genres": {
+      "喜剧": "ECS45ISKI",
+      "爱情": "ECOU5ECZQ"
+    },
+    "recent": "ECBE5CBEI",
+    "classic": "EC6EC5GBQ",
+    "underrated": "ECZY5IDOY"
+  },
+  "港剧": {
+    "genres": {
+      "喜剧": "ECXI5EIII",
+      "爱情": "EC3Y5ISIQ",
+      "古装": "ECIE5FVTI",
+      "犯罪": "EC3A46RGQ"
+    },
+    "classic": "ECVM47WUA",
+    "underrated": "EC3U5ASKQ"
+  },
+  "台剧": {
+    "genres": {
+      "爱情": "ECBU5LX3A"
+    },
+    "classic": "ECBI5EL6A",
+    "underrated": "ECJQ5LAFY"
+  },
+  "泰剧": {
+    "genres": {},
+    "underrated": "EC2Y5FJTY"
+  },
+  "欧洲剧": {
+    "genres": {
+      "喜剧": "ECJQ5LPXY",
+      "爱情": "ECSA5KEKY",
+      "悬疑": "ECEU47F2I",
+      "犯罪": "ECGM5NIQA"
+    },
+    "recent": "EC6I5FYHA",
+    "classic": "ECZY5KBOQ",
+    "underrated": "ECTM5JVYA"
+  },
+  "动画剧集": {
+    "genres": {},
+    "classic": "ECR4CRXHA"
+  }
+}
