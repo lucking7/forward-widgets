@@ -877,3 +877,49 @@ test("recent defaults stay broad instead of silently narrowing to comedy or main
   assert.equal(calls.at(-1).searchParams.get("category"), "tv");
   assert.equal(calls.at(-1).searchParams.get("type"), "tv");
 });
+
+test("unknown subject kinds and nested ads are skipped without guessing a movie identity", async () => {
+  const context = loadWidget();
+  const rows = [
+    { id: "101", type: "event", title: "活动" },
+    { id: "102", title: "无来源类型" },
+    { target: { id: "103", type: "ad", title: "嵌套广告" } },
+    { subject: { id: "104", type: "book", title: "书籍" } },
+    { work: { id: "105", type: "music", title: "音乐" } },
+  ];
+  assert.deepEqual(Array.from(await context.mapSubjects(rows, ""), (item) => item.id), ["104", "105"]);
+  assert.deepEqual(Array.from(await context.mapSubjects([{ id: "106", title: "已知来源电影" }], "movie"), (item) => item.id), ["106"]);
+  assert.equal((await context.mapSubjects([{ id: "107", type: "ad", title: "广告" }], "movie")).length, 0);
+});
+
+test("new explore enum fields reject unsupported values before HTTP while old free-form tags remain usable", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(url); return { data: { items: [] } }; } } });
+  for (const params of [
+    { mediaType: "movie", movieGenre: "电视剧:喜剧" },
+    { mediaType: "movie", movieRegion: "国外" },
+    { mediaType: "tv", tvRegion: "火星" },
+  ]) await assert.rejects(context.loadPreferenceExplore(params), /不支持/);
+  assert.equal(calls.length, 0);
+  await context.loadPreferenceExplore({ mediaType: "movie", tags: "任意自定义标签", genre: "家庭" });
+  assert.equal(new URL(calls[0]).searchParams.get("tags"), "家庭,任意自定义标签");
+});
+
+test("TV current and legacy genre routes derive equivalent requests from one supported taxonomy", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) { calls.push(url); return { data: { items: [] } }; } } });
+  for (const [, selection] of context.tvExploreOptions().filter((option) => option[1])) {
+    const [format, genre] = selection.split(":");
+    await context.loadPreferenceExplore({ mediaType: "tv", tvGenre: selection, sort: "T" });
+    await context.loadTvCatalog({ category: "genre", genre: `${format === "电视剧" ? "tv" : "show"}:${genre}`, sort: "T" });
+    assert.equal(calls.at(-1), calls.at(-2), selection);
+  }
+});
+
+test("legacy TV genre kinds cannot resolve inherited object properties", async () => {
+  let calls = 0;
+  const context = loadWidget({ http: { async get() { calls += 1; return { data: { items: [] } }; } } });
+  await assert.rejects(context.loadTvCatalog({ category: "genre", genre: "constructor:" }), /不支持/);
+  await assert.rejects(context.loadTvCatalog({ category: "genre", genre: "toString:喜剧" }), /不支持/);
+  assert.equal(calls, 0);
+});

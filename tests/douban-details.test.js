@@ -96,6 +96,9 @@ test("season-labelled Douban TV maps to a TMDB series only when that exact seaso
   const items = await loadPublicCollections({ collection: "tv_american", page: 1 });
 
   assert.deepEqual(Array.from(items, (item) => [item.type, item.id, item.mediaType]), [["tmdb", 95480, "tv"]]);
+  assert.equal(items[0].season, 6);
+  assert.equal(items[0].releaseDate, "2026-10-14");
+  assert.equal(items[0].year, "2026");
   assert.equal(tmdbQueries.includes("流人 第六季"), true);
   assert.equal(tmdbQueries.includes("Slow Horses"), true);
 });
@@ -336,4 +339,96 @@ test("an unavailable season candidate cannot establish uniqueness of another mat
   const [item] = await context.loadPublicCollections({ collection: "tv_american" });
   assert.equal(item.type, "url");
   assert.deepEqual(details.sort(), ["tv/1", "tv/2"]);
+});
+
+function seasonFixtureWidget(saved = new Map(), counters = { search: 0 }) {
+  const subjects = [
+    { id: "9101", type: "tv", title: "示例剧 第一季", original_title: "Example Show Season 1", year: "2020" },
+    { id: "9102", type: "tv", title: "示例剧 第二季", original_title: "Example Show Season 2", year: "2021" },
+  ];
+  return {
+    subjects,
+    Widget: {
+      http: { async get(url) {
+        if (url.includes("subject_collection")) return { data: { subject_collection_items: subjects } };
+        return { data: subjects.find((subject) => url.endsWith("/" + subject.id)) };
+      } },
+      tmdb: { async get(endpoint, options) {
+        if (endpoint === "tv/42") return { id: 42, seasons: [
+          { season_number: 1, air_date: "2020-02-03" },
+          { season_number: 2, air_date: "2021-04-05" },
+        ] };
+        counters.search += 1;
+        return { results: ["Example Show", "示例剧"].includes(options.params.query) ? [
+          { id: 42, media_type: "tv", name: "示例剧", original_name: "Example Show", first_air_date: "2020-02-03", overview: "TMDB 简介", poster_path: "/show.jpg" },
+        ] : [] };
+      } },
+      storage: { get(key) { return saved.get(key); }, set(key, value) { saved.set(key, value); } },
+    },
+  };
+}
+
+test("seasons sharing one TMDB series retain independent navigable identities and matched air dates", async () => {
+  const { Widget } = seasonFixtureWidget();
+  const context = loadWidget(Widget);
+  const items = await context.loadPublicCollections({ collection: "tv_american" });
+  assert.equal(items.length, 2, "different Douban seasons must never deduplicate into their shared TMDB series");
+  assert.deepEqual(Array.from(items, (item) => [item.type, item.id, item.season]), [["tmdb", 42, 1], ["tmdb", 42, 2]]);
+  assert.deepEqual(Array.from(items, (item) => item.year), ["2020", "2021"]);
+  assert.deepEqual(Array.from(items, (item) => item.releaseDate), ["2020-02-03", "2021-04-05"]);
+  assert.equal(items[1].title, "示例剧 第二季");
+  const second = await context.loadDetail("https://m.douban.com/tv/9102");
+  assert.equal(second.year, "2021");
+});
+
+test("season mapping cache preserves the matched season date across widget reloads", async () => {
+  const saved = new Map();
+  const counters = { search: 0 };
+  const { Widget, subjects } = seasonFixtureWidget(saved, counters);
+  const firstContext = loadWidget(Widget);
+  const first = await firstContext.mapSubjects([subjects[1]], "tv");
+  const searchCount = counters.search;
+  const secondContext = loadWidget(Widget);
+  const cached = await secondContext.mapSubjects([subjects[1]], "tv");
+  assert.equal(counters.search, searchCount);
+  assert.equal(first[0].year, "2021");
+  assert.equal(cached[0].year, "2021");
+  assert.equal(cached[0].releaseDate, "2021-04-05");
+  assert.equal(cached[0].id, first[0].id);
+  assert.equal(cached[0].season, 2);
+});
+
+test("old series-only mapping cache cannot restore an incorrect season year", async () => {
+  const saved = new Map();
+  const { Widget, subjects } = seasonFixtureWidget(saved);
+  const context = loadWidget(Widget);
+  const subject = context.normalizeDoubanSubject(subjects[1], "tv");
+  const oldKey = ["douban_tmdb_v2", subject.id, subject.type, subject.year, context.normalizeIdentityTitle(subject.title), context.normalizeIdentityTitle(subject.originalTitle)].map((part) => encodeURIComponent(String(part || ""))).join(":");
+  saved.set(oldKey, { expiresAt: Date.now() + 100000, candidate: { id: 42, name: "示例剧", first_air_date: "2020-02-03" } });
+  const [item] = await context.mapSubjects([subjects[1]], "tv");
+  assert.equal(item.year, "2021");
+  assert.equal(item.releaseDate, "2021-04-05");
+});
+
+test("cached season identity retains detail enrichment when list metadata omits year or season title", async () => {
+  for (const sparse of [
+    { year: undefined },
+    { year: undefined, title: "本地译名", original_title: "" },
+  ]) {
+    const saved = new Map();
+    const counters = { search: 0 };
+    const { Widget, subjects } = seasonFixtureWidget(saved, counters);
+    const input = { ...subjects[1], ...sparse };
+    const first = await loadWidget(Widget).mapSubjects([input], "tv");
+    const searchCount = counters.search;
+    const cached = await loadWidget(Widget).mapSubjects([input], "tv");
+    assert.equal(counters.search, searchCount);
+    for (const item of [first[0], cached[0]]) {
+      assert.equal(item.type, "tmdb");
+      assert.equal(item.season, 2);
+      assert.equal(item.title, "示例剧 第二季");
+      assert.equal(item.year, "2021");
+      assert.equal(item.releaseDate, "2021-04-05");
+    }
+  }
 });

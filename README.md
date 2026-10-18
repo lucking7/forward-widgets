@@ -64,7 +64,9 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/trending
 
 电影和电视的原生榜来自第一方 `category_tabs`，直接读取 `subject_collection`，保留榜单成员与顺序。自由筛选继续保留，界面按电影、剧集/综艺显示有效条件，并过滤广告卡片。完整接口范围与验证边界见 [接口审计](docs/douban-interface-audit-2026-10-18.md)。
 
-影视匹配保留媒体类型、标题、年份和唯一性约束，并在需要时补充豆瓣详情与原名。季度剧集只有在 TMDB 对应季号及该季年份也一致时才匹配到主剧。无法安全匹配时显示豆瓣详情，不按搜索第一项猜测。
+影视匹配保留媒体类型、标题、年份和唯一性约束，并在需要时补充豆瓣详情与原名。季度剧集只有在 TMDB 对应季号及该季年份也一致时才匹配到主剧，使用 `season` 保留不同季度，显示该季首播日期。无法安全匹配时显示豆瓣详情，不按搜索第一项猜测。
+
+1.2.1 补齐响应结构校验并统一重复规则，验证证据见 [交付记录](docs/douban-followups-2026-10-19.md)。
 
 详细参数、匹配规则和隐私边界见 [豆瓣全景说明](widgets/douban/douban-discovery.md)。
 
