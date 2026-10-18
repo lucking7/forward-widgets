@@ -2,45 +2,39 @@
 WidgetMetadata = {
   id: "douban.discovery.v1",
   title: "豆瓣全景",
-  description: "公开榜单、自定义片单、个性推荐与严格 TMDB 匹配",
+  description: "一周口碑、电影与电视分类、实时书影音和可靠详情匹配",
   author: "lucking7",
-  version: "1.0.0",
+  version: "1.1.0",
   requiredVersion: "0.0.2",
   site: "https://github.com/lucking7/forward-widgets",
   modules: [
     {
       id: "doubanPublic",
-      title: "豆瓣公开榜单",
+      title: "豆瓣一周口碑",
       functionName: "loadPublicCollections",
       type: "video",
       cacheDuration: 21600,
       params: [
         {
-          name: "collection", title: "榜单", type: "enumeration", value: "movie_top250",
+          name: "collection", title: "榜单", type: "enumeration", value: "movie_weekly",
           enumOptions: [
-            { title: "英美剧", value: "tv_american" },
-            { title: "韩剧", value: "tv_korean" },
-            { title: "日剧", value: "tv_japanese" },
-            { title: "国产剧", value: "tv_domestic" },
-            { title: "动画", value: "tv_animation" },
-            { title: "实时热门电影", value: "movie_hot" },
-            { title: "一周口碑电影", value: "movie_weekly" },
-            { title: "豆瓣 Top 250", value: "movie_top250" },
-            { title: "院线热映", value: "movie_showing" },
-            { title: "国内综艺", value: "show_domestic" },
-            { title: "国外综艺", value: "show_foreign" },
-            { title: "全球口碑剧集", value: "tv_global_best" },
-            { title: "华语口碑剧集", value: "tv_chinese_best" },
-            { title: "豆瓣热门电影", value: "movie_hot_gaia" },
-            { title: "热播新剧", value: "tv_hot" },
-            { title: "热播综艺", value: "show_hot" },
-            { title: "实时热门电视", value: "tv_real_time_hotest" },
-            { title: "国内综艺口碑榜", value: "show_chinese_best" },
-            { title: "全球综艺口碑榜", value: "show_global_best" },
-            { title: "第 97 届奥斯卡", value: "oscars_97" },
-            { title: "首页精选 12 部", value: "highlights" },
+            { title: "一周口碑电影榜", value: "movie_weekly" },
+            { title: "华语口碑剧集榜", value: "tv_chinese_best" },
+            { title: "全球口碑剧集榜", value: "tv_global_best" },
+            { title: "国内口碑综艺榜", value: "show_chinese_best" },
+            { title: "全球口碑综艺榜", value: "show_global_best" },
           ],
         },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    movieCatalogModule(),
+    tvCatalogModule(),
+    {
+      id: "doubanRealtime", title: "豆瓣实时热门", functionName: "loadRealtimeHot",
+      type: "video", cacheDuration: 1800,
+      params: [
+        choiceParam("kind", "榜单", [["书影音", "all"], ["电影榜", "movie"], ["电视榜", "tv"]]),
         { name: "page", title: "页码", type: "page" },
       ],
     },
@@ -186,6 +180,80 @@ WidgetMetadata = {
   ],
 };
 
+function choiceParam(name, title, options, value) {
+  var choices = options.map(function (option) {
+    return Array.isArray(option) ? { title: option[0], value: option[1] } : { title: option, value: option };
+  });
+  return { name: name, title: title, type: "enumeration", value: value == null ? choices[0].value : value, enumOptions: choices };
+}
+
+function catalogSubfilter(name, title, options) {
+  var param = choiceParam(name, title, options);
+  param.belongTo = { paramName: "category", value: [name] };
+  return param;
+}
+
+function catalogRegions() {
+  return ["全部", "华语", "欧美", "韩国", "日本", "中国大陆", "美国", "中国香港", "中国台湾", "英国", "法国", "德国", "意大利", "西班牙", "印度", "泰国", "俄罗斯", "加拿大", "澳大利亚", "爱尔兰", "瑞典", "巴西", "丹麦"];
+}
+
+function movieCatalogModule() {
+  var recent = [];
+  [["热门", "hot"], ["最新", "new"]].forEach(function (category) {
+    ["全部", "华语", "欧美", "韩国", "日本"].forEach(function (region) {
+      recent.push([category[0] + "·" + region, category[1] + ":" + region]);
+    });
+  });
+  recent.push(["院线热映", "showing"], ["实时电影榜", "realtime"]);
+  return {
+    id: "doubanMovies", title: "豆瓣电影", functionName: "loadMovieCatalog", type: "video", cacheDuration: 21600,
+    params: [
+      choiceParam("category", "分类", [["全部", "all"], ["近期热门", "recent"], ["高分经典", "classic"], ["冷门佳作", "underrated"], ["地区佳作", "region"], ["分类题材", "genre"]]),
+      catalogSubfilter("recent", "近期热门", recent),
+      catalogSubfilter("classic", "高分经典", [["豆瓣 Top 250", "top250"], ["豆瓣高分·全部", "全部"], ["豆瓣高分·华语", "华语"], ["豆瓣高分·欧美", "欧美"], ["豆瓣高分·韩国", "韩国"], ["豆瓣高分·日本", "日本"]]),
+      catalogSubfilter("underrated", "冷门佳作", ["全部", "华语", "欧美", "韩国", "日本"]),
+      catalogSubfilter("region", "地区佳作（评分 8 分起）", catalogRegions()),
+      catalogSubfilter("genre", "分类题材", ["全部", "喜剧", "爱情", "动作", "科幻", "动画", "悬疑", "犯罪", "惊悚", "冒险", "音乐", "历史", "奇幻", "恐怖", "战争", "传记", "歌舞", "武侠", "灾难", "西部", "纪录片", "短片"]),
+      catalogSortParam(),
+      { name: "page", title: "页码", type: "page" },
+    ],
+  };
+}
+
+function tvCatalogModule() {
+  var genres = [["全部剧集", "tv:"], ["全部综艺", "show:"]];
+  ["喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"].forEach(function (genre) {
+    genres.push(["剧集·" + genre, "tv:" + genre]);
+  });
+  ["真人秀", "脱口秀", "音乐", "歌舞"].forEach(function (genre) { genres.push(["综艺·" + genre, "show:" + genre]); });
+  return {
+    id: "doubanTelevision", title: "豆瓣电视", functionName: "loadTvCatalog", type: "video", cacheDuration: 21600,
+    params: [
+      choiceParam("category", "分类", [["全部", "all"], ["近期热门", "recent"], ["冷门佳作", "underrated"], ["分类题材", "genre"]]),
+      catalogSubfilter("recent", "近期热门", [["全部剧集", "tv"], ["大陆剧", "tv_domestic"], ["美剧 / 欧美剧", "tv_american"], ["日剧", "tv_japanese"], ["韩剧", "tv_korean"], ["动画", "tv_animation"], ["纪录片", "tv_documentary"], ["全部综艺", "show"], ["国内综艺", "show_domestic"], ["国外综艺", "show_foreign"]]),
+      Object.assign(catalogSubfilter("underrated", "高分冷门地区（筛选）", catalogRegions().concat(["国外"])), {
+        description: "从豆瓣推荐中筛选评分 ≥ 8 且评价人数 1–10000 的条目，不是豆瓣官方冷门榜",
+      }),
+      catalogSubfilter("genre", "分类题材", genres),
+      catalogSortParam(),
+      { name: "page", title: "页码", type: "page" },
+    ],
+  };
+}
+
+function catalogSortParam() {
+  var param = choiceParam("sort", "筛选结果排序", [["综合排序", "T"], ["近期热度", "U"], ["首映 / 首播时间", "R"], ["高分优先", "S"]]);
+  param.description = "适用于全部、地区佳作、分类题材；固定榜单保留豆瓣原顺序";
+  return param;
+}
+
+function selectedCatalogValue(module, name, value) {
+  var param = module.params.find(function (item) { return item.name === name; });
+  var selected = value == null || value === "" ? param.value : String(value);
+  if (!param.enumOptions.some(function (option) { return option.value === selected; })) throw new Error("不支持的" + param.title);
+  return selected;
+}
+
 var DOUBAN_COLLECTIONS = {
   tv_american: { id: "tv_american", type: "tv" },
   tv_korean: { id: "tv_korean", type: "tv" },
@@ -271,17 +339,25 @@ function normalizeDoubanSubject(raw, fallbackType) {
   var subject = raw && (raw.subject || raw.target || raw.work) || raw || {};
   var id = subject.id != null ? subject.id : raw && raw.target_id;
   var type = normalizeMediaType(subject.type, fallbackType);
+  var kind = subject.kind || (subject.type === "book" || subject.type === "music" ? subject.type : type) || "movie";
   var ratingValue = subject.rating && typeof subject.rating === "object" ? subject.rating.value : subject.rating;
   return {
     id: id == null ? "" : String(id),
     title: String(subject.title || subject.name || "").trim(),
     originalTitle: String(subject.original_title || subject.originalTitle || "").trim(),
+    aliases: Array.isArray(subject.aka) ? subject.aka : subject.aliases || [],
     type: type,
+    kind: kind,
     year: yearFromValue(subject.year || subject.card_subtitle || subject.info),
     rating: Number(ratingValue != null ? ratingValue : subject.rate) || undefined,
-    description: subject.info || subject.description || subject.card_subtitle || "",
+    description: subject.intro || subject.info || subject.description || subject.card_subtitle || "",
     posterPath: subject.posterPath || subject.cover_url || (typeof subject.cover === "string" ? subject.cover : subject.cover && subject.cover.url) ||
       subject.pic && subject.pic.normal || undefined,
+    genres: subject.genres || [],
+    actors: subject.actors || [],
+    directors: subject.directors || [],
+    authors: subject.author || subject.authors || [],
+    releaseDate: subject.releaseDate || (Array.isArray(subject.release_date) ? subject.release_date[0] : subject.release_date),
   };
 }
 
@@ -294,9 +370,11 @@ function candidateTitleEvidence(subject, candidate) {
   var subjectOriginal = normalizeIdentityTitle(subject.originalTitle);
   var candidateMain = normalizeIdentityTitle(candidate.title || candidate.name);
   var candidateOriginal = normalizeIdentityTitle(candidate.original_title || candidate.original_name);
+  var aliases = (subject.aliases || []).map(normalizeIdentityTitle);
   return {
     any: Boolean(subjectMain && (subjectMain === candidateMain || subjectMain === candidateOriginal)) ||
-      Boolean(subjectOriginal && (subjectOriginal === candidateMain || subjectOriginal === candidateOriginal)),
+      Boolean(subjectOriginal && (subjectOriginal === candidateMain || subjectOriginal === candidateOriginal)) ||
+      aliases.some(function (alias) { return alias && (alias === candidateMain || alias === candidateOriginal); }),
     main: Boolean(subjectMain && subjectMain === candidateMain),
     original: Boolean(subjectOriginal && subjectOriginal === candidateOriginal),
   };
@@ -330,13 +408,88 @@ function selectStrictTmdbCandidate(subject, candidates) {
 function doubanFallbackItem(subject) {
   return {
     id: subject.id,
-    type: "douban",
+    type: "url",
+    link: "https://m.douban.com/" + subject.kind + "/" + encodeURIComponent(subject.id),
     title: subject.title,
+    originalTitle: subject.originalTitle,
     mediaType: subject.type || undefined,
     rating: subject.rating,
     description: subject.description,
     posterPath: subject.posterPath,
+    coverUrl: subject.posterPath,
+    releaseDate: subject.releaseDate,
+    genreItems: (subject.genres || []).map(function (genre) { return { id: genre, title: genre }; }),
+    peoples: detailPeople(subject),
   };
+}
+
+function detailPeople(subject) {
+  var people = [];
+  [[subject.actors, "演员"], [subject.directors, "导演"], [subject.authors, "作者"]].forEach(function (group) {
+    (Array.isArray(group[0]) ? group[0] : []).forEach(function (person) {
+      var title = typeof person === "string" ? person : person.name || person.title;
+      if (title) people.push({ title: title, role: group[1], avatar: typeof person === "object" ? person.avatar && (person.avatar.normal || person.avatar) : undefined });
+    });
+  });
+  return people;
+}
+
+var DOUBAN_DETAIL_MEMORY = new Map();
+var TMDB_ACTIVE_REQUESTS = 0;
+var TMDB_REQUEST_WAITERS = [];
+
+async function tmdbGet(api, options) {
+  if (TMDB_ACTIVE_REQUESTS < 4) TMDB_ACTIVE_REQUESTS += 1;
+  else await new Promise(function (resolve) { TMDB_REQUEST_WAITERS.push(resolve); });
+  try {
+    return await Widget.tmdb.get(api, options);
+  } finally {
+    if (TMDB_REQUEST_WAITERS.length) TMDB_REQUEST_WAITERS.shift()();
+    else TMDB_ACTIVE_REQUESTS -= 1;
+  }
+}
+
+function rememberDetail(key, entry) {
+  DOUBAN_DETAIL_MEMORY.delete(key);
+  DOUBAN_DETAIL_MEMORY.set(key, entry);
+  while (DOUBAN_DETAIL_MEMORY.size > 128) DOUBAN_DETAIL_MEMORY.delete(DOUBAN_DETAIL_MEMORY.keys().next().value);
+}
+
+async function readSubjectDetail(subject, persistent) {
+  var key = "douban_detail_v2:" + subject.kind + ":" + subject.id;
+  var cached = DOUBAN_DETAIL_MEMORY.get(key);
+  if (cached && cached.expiresAt <= Date.now()) {
+    DOUBAN_DETAIL_MEMORY.delete(key);
+    cached = null;
+  }
+  if (!cached && persistent && Widget.storage && typeof Widget.storage.get === "function") {
+    try {
+      cached = await Widget.storage.get(key);
+      if (typeof cached === "string") cached = JSON.parse(cached);
+    } catch (error) { cached = null; }
+  }
+  if (cached && cached.expiresAt > Date.now()) {
+    rememberDetail(key, cached);
+    return cached.subject;
+  }
+  var response = await Widget.http.get("https://m.douban.com/rexxar/api/v2/" + subject.kind + "/" + encodeURIComponent(subject.id), { headers: DOUBAN_HEADERS });
+  var data = responseData(response);
+  if (String(data.id) !== subject.id || !data.title) throw new Error("豆瓣详情身份不匹配");
+  var detail = normalizeDoubanSubject(data, subject.type);
+  if (detail.kind !== subject.kind) throw new Error("豆瓣详情类型不匹配");
+  var entry = { subject: detail, expiresAt: Date.now() + 24 * 60 * 60 * 1000 };
+  rememberDetail(key, entry);
+  if (persistent && Widget.storage && typeof Widget.storage.set === "function") {
+    try { await Widget.storage.set(key, entry); } catch (error) { /* A cache failure must not hide the detail. */ }
+  }
+  return detail;
+}
+
+async function loadDetail(link) {
+  var match = String(link || "").match(/^https:\/\/m\.douban\.com\/(movie|tv|book|music)\/(\d+)\/?$/);
+  if (!match) throw new Error("仅支持本模块的豆瓣详情链接");
+  var detail = await readSubjectDetail({ id: match[2], kind: match[1], type: normalizeMediaType(match[1]) }, true);
+  return doubanFallbackItem(detail);
 }
 
 function tmdbVideoItem(subject, candidate) {
@@ -347,7 +500,7 @@ function tmdbVideoItem(subject, candidate) {
     tmdbId: candidate.id,
     type: "tmdb",
     mediaType: mediaType,
-    title: candidate.title || candidate.name || subject.title,
+    title: seasonIdentity(subject) ? subject.title : candidate.title || candidate.name || subject.title,
     description: candidate.overview || subject.description,
     releaseDate: releaseDate,
     year: releaseDate ? String(releaseDate).slice(0, 4) : undefined,
@@ -359,7 +512,7 @@ function tmdbVideoItem(subject, candidate) {
 
 function mappingCacheKey(subject) {
   return [
-    "douban_tmdb_v1",
+    "douban_tmdb_v2",
     subject.id,
     subject.type,
     subject.year || "",
@@ -382,7 +535,7 @@ async function readMappingCache(subject) {
 
 async function writeMappingCache(subject, candidate) {
   if (!Widget.storage || typeof Widget.storage.set !== "function") return;
-  var ttl = candidate ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  var ttl = candidate ? 30 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
   try {
     await Widget.storage.set(mappingCacheKey(subject), {
       candidate: candidate || null,
@@ -391,6 +544,53 @@ async function writeMappingCache(subject, candidate) {
   } catch (error) {
     // Cache failures must not hide a valid list item.
   }
+}
+
+function seasonIdentity(subject) {
+  if (subject.type !== "tv") return null;
+  var number = null;
+  var bases = [];
+  [subject.title, subject.originalTitle].forEach(function (title) {
+    var match = String(title || "").match(/\s*(?:第\s*([\d一二三四五六七八九十两]+)\s*季|season\s*(\d+)|s(\d{1,2}))\s*$/i);
+    if (!match) return;
+    var raw = match[1] || match[2] || match[3];
+    var digits = { "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
+    var parsed = /^\d+$/.test(raw) ? Number(raw) : raw.indexOf("十") >= 0 ? (digits[raw.split("十")[0]] || 1) * 10 + (digits[raw.split("十")[1]] || 0) : digits[raw];
+    if (!parsed || number && number !== parsed) { number = -1; return; }
+    number = parsed;
+    bases.push(String(title).slice(0, match.index).trim());
+  });
+  return number ? { number: number, bases: bases } : null;
+}
+
+async function selectSeasonCandidate(subject, candidates) {
+  var season = seasonIdentity(subject);
+  if (!season || season.number < 1 || !subject.year) return null;
+  var matches = [];
+  var eligible = candidates.filter(function (candidate) {
+    if (normalizeMediaType(candidate.media_type, subject.type) !== "tv") return false;
+    var names = [candidate.name, candidate.original_name].map(normalizeIdentityTitle);
+    return season.bases.some(function (base) { return names.indexOf(normalizeIdentityTitle(base)) >= 0; });
+  });
+  // Avoid an unbounded number of detail requests for an ambiguous generic series name.
+  if (eligible.length > 4) return null;
+  var results = await Promise.all(eligible.map(async function (candidate) {
+    try {
+      return { candidate: candidate, detail: responseData(await tmdbGet("tv/" + candidate.id, { params: { language: "zh-CN" } })) };
+    } catch (error) { return { failed: true }; }
+  }));
+  // An unavailable candidate cannot be ruled out, so do not infer uniqueness.
+  if (results.some(function (result) { return result.failed; })) return null;
+  for (var index = 0; index < results.length; index += 1) {
+    var candidate = results[index].candidate;
+    var detail = results[index].detail;
+    if (detail.id != null && String(detail.id) !== String(candidate.id)) continue;
+    var seasons = (detail.seasons || []).filter(function (item) {
+      return Number(item.season_number) === season.number && yearFromValue(item.air_date) === subject.year;
+    });
+    if (seasons.length === 1) matches.push(candidate);
+  }
+  return matches.length === 1 ? matches[0] : null;
 }
 
 async function mapSubjectToVideo(subject, useCache) {
@@ -402,12 +602,41 @@ async function mapSubjectToVideo(subject, useCache) {
     if (cached) return cached.candidate ? tmdbVideoItem(subject, cached.candidate) : doubanFallbackItem(subject);
   }
   try {
-    var response = await Widget.tmdb.get("search/" + subject.type, {
-      params: { query: subject.title, language: "zh-CN" },
-    });
-    var data = responseData(response);
-    var candidate = selectStrictTmdbCandidate(subject, data.results || []);
-    if (useCache !== false) await writeMappingCache(subject, candidate);
+    var original = subject;
+    var candidates = [];
+    var seen = Object.create(null);
+    async function search(query) {
+      var data = responseData(await tmdbGet("search/" + subject.type, { params: { query: query, language: "zh-CN" } }));
+      return data.results || [];
+    }
+    function appendCandidates(results) {
+      results.forEach(function (candidate) {
+        var id = String(candidate.id);
+        if (!seen[id]) { seen[id] = true; candidates.push(candidate); }
+      });
+    }
+    appendCandidates(await search(subject.title));
+    var season = seasonIdentity(subject);
+    var candidate = season ? null : selectStrictTmdbCandidate(subject, candidates);
+    var enriched = false;
+    if (!candidate) {
+      try { subject = await readSubjectDetail(subject, useCache !== false); enriched = true; } catch (error) { /* Keep original metadata when enrichment is unavailable. */ }
+      season = seasonIdentity(subject);
+      var queries = [subject.originalTitle].concat(season ? season.bases.slice().reverse() : [], subject.aliases || []);
+      var queryKeys = [normalizeIdentityTitle(subject.title)];
+      var extraQueries = [];
+      for (var index = 0; index < queries.length && queryKeys.length < 6; index += 1) {
+        var query = String(queries[index] || "").trim();
+        var key = normalizeIdentityTitle(query);
+        if (!key || queryKeys.indexOf(key) >= 0) continue;
+        queryKeys.push(key);
+        extraQueries.push(query);
+      }
+      var searchResults = await Promise.all(extraQueries.map(search));
+      searchResults.forEach(appendCandidates);
+      candidate = season ? await selectSeasonCandidate(subject, candidates) : selectStrictTmdbCandidate(subject, candidates);
+    }
+    if (useCache !== false && (candidate || enriched)) await writeMappingCache(original, candidate);
     return candidate ? tmdbVideoItem(subject, candidate) : doubanFallbackItem(subject);
   } catch (error) {
     return doubanFallbackItem(subject);
@@ -415,23 +644,30 @@ async function mapSubjectToVideo(subject, useCache) {
 }
 
 async function mapSubjects(rawItems, fallbackType, useCache) {
-  var results = new Array(rawItems.length);
+  var sourceSeen = Object.create(null);
+  var subjects = rawItems.map(function (raw) { return normalizeDoubanSubject(raw, fallbackType); }).filter(function (subject) {
+    var key = subject.kind + ":" + subject.id;
+    if (sourceSeen[key]) return false;
+    sourceSeen[key] = true;
+    return true;
+  });
+  var results = new Array(subjects.length);
   var nextIndex = 0;
   async function worker() {
     while (true) {
       var index = nextIndex;
       nextIndex += 1;
-      if (index >= rawItems.length) return;
-      results[index] = await mapSubjectToVideo(normalizeDoubanSubject(rawItems[index], fallbackType), useCache);
+      if (index >= subjects.length) return;
+      results[index] = await mapSubjectToVideo(subjects[index], useCache);
     }
   }
   var workers = [];
-  var workerCount = Math.min(4, rawItems.length);
+  var workerCount = Math.min(4, subjects.length);
   for (var workerIndex = 0; workerIndex < workerCount; workerIndex += 1) workers.push(worker());
   await Promise.all(workers);
   var seen = Object.create(null);
   return results.filter(function (item) {
-    var key = [item.type || "", item.mediaType || "", item.id || ""].join(":");
+    var key = [item.type || "", item.mediaType || "", item.type === "url" ? item.link : item.id || ""].join(":");
     if (seen[key]) return false;
     seen[key] = true;
     return true;
@@ -463,7 +699,7 @@ async function loadPublicHighlights(page) {
 
 async function loadPublicCollections(params) {
   params = params || {};
-  var key = params.collection || "movie_top250";
+  var key = params.collection || "movie_weekly";
   var page = pageNumber(params.page);
   if (key === "highlights") return loadPublicHighlights(page);
   var collection = DOUBAN_COLLECTIONS[key];
@@ -539,7 +775,80 @@ async function loadRecommendations(params) {
   return mapSubjects(data.items || [], mediaType);
 }
 
-async function loadPreferenceExplore(params) {
+async function loadMovieCatalog(params) {
+  params = params || {};
+  var module = movieCatalogModule();
+  var category = selectedCatalogValue(module, "category", params.category);
+  var page = pageNumber(params.page);
+  if (category === "recent") {
+    var recent = selectedCatalogValue(module, "recent", params.recent);
+    if (recent === "showing" || recent === "realtime") return loadPublicCollections({ collection: recent === "showing" ? "movie_showing" : "movie_hot", page: page });
+    var parts = recent.split(":");
+    return loadRecommendations({ mediaType: "movie", category: parts[0] === "new" ? "最新" : "热门", region: parts[1], page: page });
+  }
+  if (category === "classic") {
+    var classic = selectedCatalogValue(module, "classic", params.classic);
+    if (classic === "top250") return loadPublicCollections({ collection: "movie_top250", page: page });
+    return loadRecommendations({ mediaType: "movie", category: "豆瓣高分", region: classic, page: page });
+  }
+  if (category === "underrated") return loadRecommendations({ mediaType: "movie", category: "冷门佳片", region: selectedCatalogValue(module, "underrated", params.underrated), page: page });
+  var options = { mediaType: "movie", offset: (page - 1) * 20, sort: selectedCatalogValue(module, "sort", params.sort) };
+  if (category === "region") {
+    var region = selectedCatalogValue(module, "region", params.region);
+    options.region = region === "全部" ? "" : region;
+    options.minRating = "8";
+  }
+  if (category === "genre") {
+    var genre = selectedCatalogValue(module, "genre", params.genre);
+    options.genre = genre === "全部" ? "" : genre;
+  }
+  return loadPreferenceExplore(options);
+}
+
+async function loadRealtimeHot(params) {
+  params = params || {};
+  var kind = String(params.kind || "all");
+  var collections = { all: "subject_real_time_hotest", movie: "movie_real_time_hotest", tv: "tv_real_time_hotest" };
+  if (!Object.prototype.hasOwnProperty.call(collections, kind)) throw new Error("不支持的实时热门榜");
+  var start = (pageNumber(params.page) - 1) * 20;
+  var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + collections[kind] +
+    "/items?start=" + start + "&count=20&items_only=1&for_mobile=1";
+  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
+  return mapSubjects(data.subject_collection_items || [], kind === "all" ? "" : kind);
+}
+
+async function loadTvCatalog(params) {
+  params = params || {};
+  var module = tvCatalogModule();
+  var category = selectedCatalogValue(module, "category", params.category);
+  var page = pageNumber(params.page);
+  if (category === "recent") {
+    var recent = selectedCatalogValue(module, "recent", params.recent);
+    return loadRecommendations({ mediaType: "tv", category: recent.indexOf("show") === 0 ? "show" : "tv", region: recent, page: page });
+  }
+  var options = { mediaType: "tv", offset: (page - 1) * 20, sort: selectedCatalogValue(module, "sort", params.sort) };
+  if (category === "genre") {
+    var parts = selectedCatalogValue(module, "genre", params.genre).split(":");
+    options.format = parts[0] === "show" ? "综艺" : "电视剧";
+    options.genre = parts[1];
+  }
+  if (category === "underrated") {
+    var region = selectedCatalogValue(module, "underrated", params.underrated);
+    options.region = region === "全部" ? "" : region;
+    options.minRating = "8";
+    options.sort = "U";
+    options.count = 100;
+    options.offset = (page - 1) * 100;
+    var subjects = await fetchPreferenceSubjects(options);
+    return mapSubjects(subjects.filter(function (item) {
+      var count = Number(item.rating && item.rating.count);
+      return Number(item.rating && item.rating.value) >= 8 && count > 0 && count <= 10000;
+    }), "tv");
+  }
+  return loadPreferenceExplore(options);
+}
+
+async function fetchPreferenceSubjects(params) {
   params = params || {};
   var mediaType = normalizeMediaType(params.mediaType || "movie");
   if (!mediaType) throw new Error("偏好类型必须是 movie 或 tv");
@@ -547,6 +856,7 @@ async function loadPreferenceExplore(params) {
   if (!/^(?:[0-9])$/.test(rating)) throw new Error("最低评分必须是 0 到 9 的整数");
   var offsetValue = Number(params.offset == null ? 0 : params.offset);
   var offset = Number.isFinite(offsetValue) && offsetValue >= 0 ? Math.floor(offsetValue) : 0;
+  var count = params.count === 100 ? 100 : 20;
   var selected = {
     "类型": String(params.genre || ""),
     "地区": String(params.region || ""),
@@ -561,14 +871,18 @@ async function loadPreferenceExplore(params) {
     if (uniqueTags.indexOf(tag) < 0) uniqueTags.push(tag);
   });
   var url = "https://m.douban.com/rexxar/api/v2/" + mediaType +
-    "/recommend?refresh=0&start=" + offset + "&count=20" +
+    "/recommend?refresh=0&start=" + offset + "&count=" + count +
     "&selected_categories=" + encodeURIComponent(JSON.stringify(selected)) +
     "&uncollect=false&score_range=" + encodeURIComponent(rating + ",10") +
     "&tags=" + encodeURIComponent(uniqueTags.join(",")) +
     "&sort=" + encodeURIComponent(String(params.sort || "U"));
   var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  var items = (data.items || []).filter(function (item) { return !item.card || item.card === "subject"; });
-  return mapSubjects(items, mediaType);
+  return (data.items || []).filter(function (item) { return !item.card || item.card === "subject"; });
+}
+
+async function loadPreferenceExplore(params) {
+  params = params || {};
+  return mapSubjects(await fetchPreferenceSubjects(params), normalizeMediaType(params.mediaType || "movie"));
 }
 
 async function fetchInterestSubjects(userId, status, start, count) {

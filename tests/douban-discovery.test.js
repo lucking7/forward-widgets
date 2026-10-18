@@ -20,7 +20,7 @@ function loadWidget(Widget = {}, overrides = {}) {
   return context;
 }
 
-test("publishes the seven stable Douban discovery modules in a strict Forward runtime", () => {
+test("publishes categorized discovery modules and preserves existing module IDs", () => {
   const source = fs.readFileSync(path.join(__dirname, "../widgets/douban/douban-discovery.js"), "utf8");
   const context = loadWidget();
 
@@ -30,6 +30,9 @@ test("publishes the seven stable Douban discovery modules in a strict Forward ru
     Array.from(context.WidgetMetadata.modules, (module) => [module.id, module.functionName]),
     [
       ["doubanPublic", "loadPublicCollections"],
+      ["doubanMovies", "loadMovieCatalog"],
+      ["doubanTelevision", "loadTvCatalog"],
+      ["doubanRealtime", "loadRealtimeHot"],
       ["doubanCustomList", "loadCustomList"],
       ["doubanRecommendations", "loadRecommendations"],
       ["doubanExplore", "loadPreferenceExplore"],
@@ -52,6 +55,9 @@ test("metadata exposes every public capability with unique parameter names", () 
 
   assert.deepEqual(namesById, {
     doubanPublic: ["collection", "page"],
+    doubanMovies: ["category", "recent", "classic", "underrated", "region", "genre", "sort", "page"],
+    doubanTelevision: ["category", "recent", "underrated", "genre", "sort", "page"],
+    doubanRealtime: ["kind", "page"],
     doubanCustomList: ["url", "page"],
     doubanRecommendations: ["mediaType", "category", "region", "page"],
     doubanExplore: ["mediaType", "format", "genre", "region", "year", "platform", "tags", "minRating", "sort", "offset"],
@@ -61,21 +67,31 @@ test("metadata exposes every public capability with unique parameter names", () 
   });
   const publicModule = WidgetMetadata.modules.find((module) => module.id === "doubanPublic");
   const collectionValues = publicModule.params[0].enumOptions.map((option) => option.value);
-  for (const value of [
-    "tv_american", "tv_korean", "tv_japanese", "tv_domestic", "tv_animation",
-    "movie_hot", "movie_weekly", "movie_top250", "movie_showing",
-    "show_domestic", "show_foreign", "tv_global_best", "tv_chinese_best",
-    "movie_hot_gaia", "tv_hot", "show_hot", "tv_real_time_hotest",
-    "show_chinese_best", "show_global_best", "oscars_97",
-    "highlights",
-  ]) {
-    assert.equal(collectionValues.includes(value), true, `missing collection option: ${value}`);
-  }
+  assert.equal(publicModule.title, "豆瓣一周口碑");
+  assert.deepEqual(Array.from(collectionValues), ["movie_weekly", "tv_chinese_best", "tv_global_best", "show_chinese_best", "show_global_best"]);
   assert.equal(collectionValues.some((value) => value.startsWith("tag_")), false);
   const customModule = WidgetMetadata.modules.find((module) => module.id === "doubanCustomList");
   const customPlaceholders = customModule.params[0].placeholders;
   assert.equal(customPlaceholders.length, 3);
   assert.equal(customPlaceholders.every((option) => option.value.includes("/doulist/")), true);
+});
+
+test("movie and television categories expose only their own conditional subfilters", () => {
+  const { WidgetMetadata } = loadWidget();
+  const movies = WidgetMetadata.modules.find((module) => module.id === "doubanMovies");
+  const tv = WidgetMetadata.modules.find((module) => module.id === "doubanTelevision");
+  assert.deepEqual(Array.from(movies.params[0].enumOptions, (x) => x.title), ["全部", "近期热门", "高分经典", "冷门佳作", "地区佳作", "分类题材"]);
+  assert.deepEqual(Array.from(tv.params[0].enumOptions, (x) => x.title), ["全部", "近期热门", "冷门佳作", "分类题材"]);
+  for (const module of [movies, tv]) {
+    const categories = Array.from(module.params[0].enumOptions, (x) => x.value);
+    for (const param of module.params.filter((x) => x.belongTo)) {
+      assert.equal(param.belongTo.paramName, "category");
+      assert.deepEqual(Array.from(param.belongTo.value), [param.name]);
+      assert.ok(categories.includes(param.name));
+    }
+  }
+  const realtime = WidgetMetadata.modules.find((module) => module.id === "doubanRealtime");
+  assert.deepEqual(Array.from(realtime.params[0].enumOptions, (x) => x.title), ["书影音", "电影榜", "电视榜"]);
 });
 
 test("public collections paginate and select the evidence-backed TMDB result instead of the first result", async () => {
@@ -145,11 +161,11 @@ test("every public collection has an explicit media type instead of relying on i
   const items = await loadPublicCollections({ collection: "oscars_97", page: 1 });
 
   assert.deepEqual(tmdbEndpoints, ["search/movie"]);
-  assert.equal(items[0].type, "douban");
+  assert.equal(items[0].type, "url");
   assert.equal(items[0].mediaType, "movie");
 });
 
-test("strict TMDB matching keeps an ambiguous or season-weakened subject as Douban", async () => {
+test("strict TMDB matching keeps an ambiguous or season-weakened subject as a module-owned detail", async () => {
   const Widget = {
     http: {
       async get() {
@@ -185,7 +201,7 @@ test("strict TMDB matching keeps an ambiguous or season-weakened subject as Doub
 
   assert.deepEqual(
     Array.from(items, (item) => ({ id: item.id, type: item.type, title: item.title })),
-    [{ id: "35580265", type: "douban", title: "星城 第二季" }],
+    [{ id: "35580265", type: "url", title: "星城 第二季" }],
   );
 });
 
@@ -207,8 +223,8 @@ test("custom lists support only HTTPS Doulist and subject-collection URLs and pr
   const doulist = await loadCustomList({ url: "https://www.douban.com/doulist/1518184/", page: 2 });
   const collection = await loadCustomList({ url: "https://m.douban.com/subject_collection/tv_hot", page: 3 });
 
-  assert.deepEqual(Array.from(doulist, (item) => [item.id, item.type]), [["11", "douban"]]);
-  assert.deepEqual(Array.from(collection, (item) => [item.id, item.type]), [["22", "douban"]]);
+  assert.deepEqual(Array.from(doulist, (item) => [item.id, item.type]), [["11", "url"]]);
+  assert.deepEqual(Array.from(collection, (item) => [item.id, item.type]), [["22", "url"]]);
   assert.match(calls[0], /start=25/);
   assert.match(calls[0], /count=25/);
   assert.match(calls[1], /start=40/);
@@ -309,7 +325,7 @@ test("interests paginate wanted, watching, and watched lists without sending a C
 
   const items = await loadInterests({ userId: "user name", status: "mark", page: 2 });
 
-  assert.deepEqual(Array.from(items, (item) => [item.id, item.type]), [["401", "douban"]]);
+  assert.deepEqual(Array.from(items, (item) => [item.id, item.type]), [["401", "url"]]);
   assert.match(calls[0].url, /\/user\/user%20name\/interests/);
   assert.match(calls[0].url, /status=mark/);
   assert.match(calls[0].url, /start=20/);
@@ -377,7 +393,8 @@ test("personalized recommendations require a Cookie and never leak it to TMDB or
   const items = await loadPersonalized({ cookie: secret, mediaType: "movie", page: 2 });
 
   assert.equal(items[0].id, "501");
-  assert.equal(httpCalls.length, 1);
+  assert.equal(httpCalls.filter((call) => call.options.headers.Cookie).length, 1);
+  assert.equal(httpCalls.slice(1).every((call) => !call.options.headers.Cookie), true);
   assert.match(httpCalls[0].url, /^https:\/\/m\.douban\.com\//);
   assert.match(httpCalls[0].url, /start=20/);
   assert.match(httpCalls[0].url, /ck=abc123/);
@@ -598,4 +615,82 @@ test("source-level HTTP failures reject instead of becoming fake empty or text i
     loadPublicCollections({ collection: "movie_top250", page: 1 }),
     /豆瓣请求失败: 429/,
   );
+});
+
+test("movie catalog routes curated categories to valid APIs and preserves pagination", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) {
+    calls.push(new URL(url));
+    return { data: { items: [], subject_collection_items: [] } };
+  } } });
+  await context.loadMovieCatalog({ category: "recent", recent: "new:日本", page: 2 });
+  assert.equal(calls[0].searchParams.get("category"), "最新");
+  assert.equal(calls[0].searchParams.get("type"), "日本");
+  assert.equal(calls[0].searchParams.get("start"), "20");
+  await context.loadMovieCatalog({ category: "classic", classic: "top250" });
+  assert.match(calls[1].pathname, /subject_collection\/movie_top250\/items$/);
+  await context.loadMovieCatalog({ category: "underrated", underrated: "华语" });
+  assert.equal(calls[2].searchParams.get("category"), "冷门佳片");
+  await context.loadMovieCatalog({ category: "region", region: "法国", page: 3 });
+  assert.equal(calls[3].pathname, "/rexxar/api/v2/movie/recommend");
+  assert.equal(calls[3].searchParams.get("score_range"), "8,10");
+  assert.equal(calls[3].searchParams.get("tags"), "法国");
+  assert.equal(calls[3].searchParams.get("start"), "40");
+  await context.loadMovieCatalog({ category: "genre", genre: "科幻", sort: "R" });
+  assert.equal(calls[4].searchParams.get("tags"), "科幻");
+  assert.equal(calls[4].searchParams.get("sort"), "R");
+  await assert.rejects(context.loadMovieCatalog({ category: "recent", recent: "show:tv" }), /不支持/);
+  assert.equal(calls.length, 5);
+});
+
+test("TV catalog separates recent shows and variety and forwards genre/format together", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) {
+    calls.push(new URL(url)); return { data: { items: [] } };
+  } } });
+  await context.loadTvCatalog({ category: "recent", recent: "tv_japanese" });
+  await context.loadTvCatalog({ category: "recent", recent: "show_domestic" });
+  await context.loadTvCatalog({ category: "genre", genre: "show:真人秀", page: 2 });
+  assert.equal(calls[0].searchParams.get("category"), "tv");
+  assert.equal(calls[0].searchParams.get("type"), "tv_japanese");
+  assert.equal(calls[1].searchParams.get("category"), "show");
+  assert.equal(calls[1].searchParams.get("type"), "show_domestic");
+  assert.equal(calls[2].searchParams.get("tags"), "真人秀,综艺");
+  assert.equal(JSON.parse(calls[2].searchParams.get("selected_categories"))["形式"], "综艺");
+  assert.equal(calls[2].searchParams.get("start"), "20");
+});
+
+test("weekly and realtime lists select separate source collections", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) {
+    calls.push(new URL(url)); return { data: { subject_collection_items: [] } };
+  } } });
+  for (const collection of ["movie_weekly", "tv_chinese_best", "tv_global_best", "show_chinese_best", "show_global_best"]) {
+    await context.loadPublicCollections({ collection });
+  }
+  for (const kind of ["all", "movie", "tv"]) await context.loadRealtimeHot({ kind });
+  assert.deepEqual(calls.map((url) => url.pathname.split("/").at(-2)), [
+    "movie_weekly_best", "tv_chinese_best_weekly", "tv_global_best_weekly", "show_chinese_best_weekly", "show_global_best_weekly",
+    "subject_real_time_hotest", "movie_real_time_hotest", "tv_real_time_hotest",
+  ]);
+  await assert.rejects(context.loadRealtimeHot({ kind: "unknown" }), /不支持/);
+  assert.equal(calls.length, 8);
+});
+
+test("TV cold picks use an explicit rating/vote filter and nonoverlapping API windows", async () => {
+  const calls = [];
+  const context = loadWidget({ http: { async get(url) {
+    calls.push(new URL(url)); return { data: { items: [
+      { card: "subject", type: "tv", id: "1", title: "小众高分", rating: { value: 8.5, count: 5000 } },
+      { card: "subject", type: "tv", id: "2", title: "热门高分", rating: { value: 9.1, count: 10001 } },
+      { card: "subject", type: "tv", id: "3", title: "人数未知", rating: { value: 8.1 } },
+      { card: "subject", type: "tv", id: "4", title: "评分不足", rating: { value: 7.9, count: 100 } },
+    ] } };
+  } } });
+  const items = await context.loadTvCatalog({ category: "underrated", underrated: "日本", page: 2 });
+  assert.deepEqual(Array.from(items, (item) => item.title), ["小众高分"]);
+  assert.equal(calls[0].searchParams.get("start"), "100");
+  assert.equal(calls[0].searchParams.get("count"), "100");
+  assert.equal(calls[0].searchParams.get("score_range"), "8,10");
+  assert.equal(calls[0].searchParams.get("sort"), "U");
 });
