@@ -1,0 +1,400 @@
+{
+  "audited_at": "2026-10-18T07:43:36.660Z",
+  "source_url": "https://m.douban.com/rexxar/api/v2/subject_collection/EC2FACYKQ?for_mobile=1",
+  "http_status": 200,
+  "title": "豆瓣2025评分最高华语剧集",
+  "years": [
+    {
+      "year": "2025",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "EC2FACYKQ"
+        },
+        {
+          "name": "英美新剧",
+          "id": "ECHNAB4LY"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECWQ7ZJGY"
+        },
+        {
+          "name": "日本剧集",
+          "id": "ECPNAHZ2A"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "EC7VAFY4Q"
+        },
+        {
+          "name": "综艺",
+          "id": "EC647Z33A"
+        },
+        {
+          "name": "动画",
+          "id": "ECQM7YUOQ"
+        },
+        {
+          "name": "纪录",
+          "id": "ECIM7ZJCI"
+        },
+        {
+          "name": "微短剧",
+          "id": "EC2RAB7MY"
+        }
+      ]
+    },
+    {
+      "year": "2024",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "ECYA7RAZQ"
+        },
+        {
+          "name": "英美新剧",
+          "id": "EC5U7O7WY"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECOY7WR4I"
+        },
+        {
+          "name": "日本剧集",
+          "id": "ECRE7PJSQ"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "ECMM7RKRA"
+        },
+        {
+          "name": "综艺",
+          "id": "ECTE7TV3Y"
+        },
+        {
+          "name": "动画",
+          "id": "ECHQ7SAPY"
+        },
+        {
+          "name": "纪录",
+          "id": "ECDM74KXY"
+        }
+      ]
+    },
+    {
+      "year": "2023",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "ECTE6EOZA"
+        },
+        {
+          "name": "英美新剧",
+          "id": "ECUI6CVAI"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECM46I42A"
+        },
+        {
+          "name": "日本剧集",
+          "id": "ECPE6B6NI"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "EC246FT6Y"
+        },
+        {
+          "name": "综艺",
+          "id": "EC7I6GR6A"
+        },
+        {
+          "name": "动画",
+          "id": "EC3Q6JTOQ"
+        },
+        {
+          "name": "纪录",
+          "id": "ECCU6NNCI"
+        }
+      ]
+    },
+    {
+      "year": "2022",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "ECWU56XUI"
+        },
+        {
+          "name": "英美新剧",
+          "id": "ECQY6HRQQ"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECMU6H5VY"
+        },
+        {
+          "name": "日本剧集",
+          "id": "ECRY6I6FA"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "EC2Y6BEGQ"
+        },
+        {
+          "name": "综艺",
+          "id": "EC4U6BXLA"
+        },
+        {
+          "name": "动画",
+          "id": "ECRI533KQ"
+        },
+        {
+          "name": "纪录",
+          "id": "ECR455GTQ"
+        }
+      ]
+    },
+    {
+      "year": "2021",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "ECOY56I6Y"
+        },
+        {
+          "name": "英美新剧",
+          "id": "EC5U5X5FA"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECEI6A5ZI"
+        },
+        {
+          "name": "日本剧集",
+          "id": "ECZQ6AD6Y"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "ECNI5ZBSQ"
+        },
+        {
+          "name": "动画",
+          "id": "ECGA6CUPA"
+        },
+        {
+          "name": "纪录",
+          "id": "ECPY52QZY"
+        }
+      ]
+    },
+    {
+      "year": "2020",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "ECCM5TXSI"
+        },
+        {
+          "name": "英美新剧",
+          "id": "ECSA5PTFI"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECZU5SJAI"
+        },
+        {
+          "name": "日本剧集",
+          "id": "ECBI5KPKY"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "ECJM5OL6Y"
+        }
+      ]
+    },
+    {
+      "year": "2019",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "ECR4HOW3I"
+        },
+        {
+          "name": "英美新剧",
+          "id": "ECS4HX5JI"
+        },
+        {
+          "name": "英美续订",
+          "id": "ECS4HX6GQ"
+        },
+        {
+          "name": "日本剧集",
+          "id": "EC2AHUXEA"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "ECR4HO7JA"
+        }
+      ]
+    },
+    {
+      "year": "2018",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "2018_tv_23"
+        },
+        {
+          "name": "英美新剧",
+          "id": "2018_tv_24"
+        },
+        {
+          "name": "英美续订",
+          "id": "2018_tv_25"
+        },
+        {
+          "name": "日本剧集",
+          "id": "2018_tv_26"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "2018_tv_27"
+        },
+        {
+          "name": "动画",
+          "id": "2018_tv_28"
+        },
+        {
+          "name": "纪录",
+          "id": "2018_tv_29"
+        }
+      ]
+    },
+    {
+      "year": "2017",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "2017_tv_domestic_score"
+        },
+        {
+          "name": "英美新剧",
+          "id": "2017_tv_american_score"
+        },
+        {
+          "name": "英美续订",
+          "id": "2017_tv_743"
+        },
+        {
+          "name": "日本剧集",
+          "id": "2017_tv_740"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "2017_tv_741"
+        },
+        {
+          "name": "动画",
+          "id": "2017_tv_706"
+        },
+        {
+          "name": "纪录",
+          "id": "2017_tv_707"
+        }
+      ]
+    },
+    {
+      "year": "2016",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "2016_tv_478"
+        },
+        {
+          "name": "英美新剧",
+          "id": "2016_tv_472"
+        },
+        {
+          "name": "英美续订",
+          "id": "2016_tv_474"
+        },
+        {
+          "name": "日本剧集",
+          "id": "2016_tv_482"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "2016_tv_481"
+        },
+        {
+          "name": "动画",
+          "id": "2016_tv_486"
+        },
+        {
+          "name": "纪录",
+          "id": "2016_tv_487"
+        }
+      ]
+    },
+    {
+      "year": "2015",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "2015_tv_6"
+        },
+        {
+          "name": "英美新剧",
+          "id": "2015_tv_7"
+        },
+        {
+          "name": "英美续订",
+          "id": "2015_tv_13"
+        },
+        {
+          "name": "日本剧集",
+          "id": "2015_tv_14"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "2015_tv_15"
+        },
+        {
+          "name": "动画",
+          "id": "2015_tv_60"
+        }
+      ]
+    },
+    {
+      "year": "2014",
+      "items": [
+        {
+          "name": "华语剧集",
+          "id": "2014_tv_14"
+        },
+        {
+          "name": "英美新剧",
+          "id": "2014_tv_13"
+        },
+        {
+          "name": "英美续订",
+          "id": "2014_tv_12"
+        },
+        {
+          "name": "日本剧集",
+          "id": "2014_tv_16"
+        },
+        {
+          "name": "韩国剧集",
+          "id": "2014_tv_15"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "years": 12,
+    "entries": 82
+  }
+}

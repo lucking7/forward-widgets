@@ -16,7 +16,7 @@
       "title": "豆瓣全景",
       "description": "一周口碑、电影与电视分类、实时书影音和可靠详情匹配",
       "requiredVersion": "0.0.2",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "author": "lucking7",
       "url": "https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/douban/douban-discovery.js"
     },

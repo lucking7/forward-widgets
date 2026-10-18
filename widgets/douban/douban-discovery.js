@@ -4,7 +4,7 @@ WidgetMetadata = {
   title: "豆瓣全景",
   description: "一周口碑、电影与电视分类、实时书影音和可靠详情匹配",
   author: "lucking7",
-  version: "1.1.1",
+  version: "1.2.0",
   requiredVersion: "0.0.2",
   site: "https://github.com/lucking7/forward-widgets",
   modules: [
@@ -67,21 +67,13 @@ WidgetMetadata = {
         { name: "mediaType", title: "类别", type: "enumeration", value: "movie", enumOptions: [
           { title: "电影", value: "movie" }, { title: "剧集/综艺", value: "tv" },
         ] },
-        { name: "category", title: "分类", type: "enumeration", value: "热门", enumOptions: [
-          { title: "电影·热门", value: "热门" }, { title: "电影·最新", value: "最新" },
-          { title: "电影·豆瓣高分", value: "豆瓣高分" }, { title: "电影·冷门佳片", value: "冷门佳片" },
-          { title: "剧集", value: "tv" }, { title: "综艺", value: "show" },
-        ] },
-        { name: "region", title: "地区/子类型", type: "enumeration", value: "全部", enumOptions: [
-          { title: "电影·全部", value: "全部" }, { title: "电影·华语", value: "华语" },
-          { title: "电影·欧美", value: "欧美" }, { title: "电影·韩国", value: "韩国" },
-          { title: "电影·日本", value: "日本" }, { title: "剧集·综合", value: "tv" },
-          { title: "剧集·国产", value: "tv_domestic" }, { title: "剧集·欧美", value: "tv_american" },
-          { title: "剧集·日本", value: "tv_japanese" }, { title: "剧集·韩国", value: "tv_korean" },
-          { title: "剧集·动画", value: "tv_animation" }, { title: "剧集·纪录片", value: "tv_documentary" },
-          { title: "综艺·综合", value: "show" }, { title: "综艺·国内", value: "show_domestic" },
-          { title: "综艺·国外", value: "show_foreign" },
-        ] },
+        mediaSubfilter("movieCategory", "电影分类", ["热门", "最新", "豆瓣高分", "冷门佳片"], "movie"),
+        mediaSubfilter("movieRegion", "电影地区", ["全部", "华语", "欧美", "韩国", "日本"], "movie"),
+        mediaSubfilter("tvRegion", "剧集 / 综艺分类", [
+          ["全部剧集", "tv"], ["国产剧", "tv_domestic"], ["欧美剧", "tv_american"],
+          ["日剧", "tv_japanese"], ["韩剧", "tv_korean"], ["动画", "tv_animation"],
+          ["纪录片", "tv_documentary"], ["全部综艺", "show"], ["国内综艺", "show_domestic"], ["国外综艺", "show_foreign"],
+        ], "tv"),
         { name: "page", title: "页码", type: "page" },
       ],
     },
@@ -95,28 +87,10 @@ WidgetMetadata = {
         { name: "mediaType", title: "类别", type: "enumeration", value: "movie", enumOptions: [
           { title: "电影", value: "movie" }, { title: "剧集", value: "tv" },
         ] },
-        { name: "format", title: "形式", type: "enumeration", value: "", enumOptions: [
-          { title: "全部", value: "" }, { title: "电视剧", value: "电视剧" }, { title: "综艺", value: "综艺" },
-        ] },
-        { name: "genre", title: "类型", type: "enumeration", value: "", enumOptions: [
-          { title: "全部", value: "" }, { title: "喜剧", value: "喜剧" }, { title: "爱情", value: "爱情" },
-          { title: "动作", value: "动作" }, { title: "科幻", value: "科幻" }, { title: "动画", value: "动画" },
-          { title: "悬疑", value: "悬疑" }, { title: "犯罪", value: "犯罪" }, { title: "音乐", value: "音乐" },
-          { title: "历史", value: "历史" }, { title: "奇幻", value: "奇幻" }, { title: "恐怖", value: "恐怖" },
-          { title: "战争", value: "战争" }, { title: "西部", value: "西部" }, { title: "歌舞", value: "歌舞" },
-          { title: "传记", value: "传记" }, { title: "武侠", value: "武侠" }, { title: "纪录片", value: "纪录片" },
-          { title: "短片", value: "短片" }, { title: "古装", value: "古装" }, { title: "家庭", value: "家庭" },
-          { title: "冒险", value: "冒险" }, { title: "剧情", value: "剧情" }, { title: "惊悚", value: "惊悚" },
-          { title: "灾难", value: "灾难" }, { title: "真人秀", value: "真人秀" }, { title: "脱口秀", value: "脱口秀" },
-        ] },
-        { name: "region", title: "地区", type: "enumeration", value: "", enumOptions: [
-          { title: "全部", value: "" }, { title: "华语", value: "华语" }, { title: "欧美", value: "欧美" },
-          { title: "韩国", value: "韩国" }, { title: "日本", value: "日本" }, { title: "中国大陆", value: "中国大陆" },
-          { title: "中国香港", value: "中国香港" }, { title: "中国台湾", value: "中国台湾" },
-          { title: "美国", value: "美国" }, { title: "英国", value: "英国" }, { title: "法国", value: "法国" },
-          { title: "德国", value: "德国" }, { title: "意大利", value: "意大利" },
-          { title: "西班牙", value: "西班牙" }, { title: "印度", value: "印度" }, { title: "泰国", value: "泰国" },
-        ] },
+        mediaSubfilter("movieGenre", "电影类型", ["", "喜剧", "爱情", "动作", "科幻", "动画", "悬疑", "犯罪", "惊悚", "冒险", "音乐", "历史", "奇幻", "恐怖", "战争", "传记", "歌舞", "武侠", "灾难", "西部", "纪录片", "短片"].map(allChoice), "movie"),
+        mediaSubfilter("tvGenre", "剧集 / 综艺类型", tvExploreOptions(), "tv"),
+        mediaSubfilter("movieRegion", "电影地区", catalogRegions().map(function (region) { return region === "全部" ? [region, ""] : region; }), "movie"),
+        mediaSubfilter("tvRegion", "电视地区", ["", "华语", "欧美", "国外", "韩国", "日本", "中国大陆", "中国香港", "美国", "英国", "泰国", "中国台湾", "意大利", "法国", "德国", "西班牙", "俄罗斯", "瑞典", "巴西", "丹麦", "印度", "加拿大", "爱尔兰", "澳大利亚"].map(allChoice), "tv"),
         { name: "year", title: "年份", type: "input", value: "", description: "年份或年代，例如 2026、2020年代" },
         { name: "platform", title: "平台", type: "enumeration", value: "", enumOptions: [
           { title: "全部", value: "" }, { title: "腾讯视频", value: "腾讯视频" }, { title: "爱奇艺", value: "爱奇艺" },
@@ -187,8 +161,8 @@ function choiceParam(name, title, options, value) {
   return { name: name, title: title, type: "enumeration", value: value == null ? choices[0].value : value, enumOptions: choices };
 }
 
-function catalogSubfilter(name, title, options) {
-  var param = choiceParam(name, title, options);
+function catalogSubfilter(name, title, options, value) {
+  var param = choiceParam(name, title, options, value);
   param.belongTo = { paramName: "category", value: [name] };
   return param;
 }
@@ -197,9 +171,108 @@ function catalogRegions() {
   return ["全部", "华语", "欧美", "韩国", "日本", "中国大陆", "美国", "中国香港", "中国台湾", "英国", "法国", "德国", "意大利", "西班牙", "印度", "泰国", "俄罗斯", "加拿大", "澳大利亚", "爱尔兰", "瑞典", "巴西", "丹麦"];
 }
 
+function allChoice(value) {
+  return value === "" ? ["全部", ""] : value;
+}
+
+function tvExploreOptions() {
+  var options = [["全部", ""], ["全部剧集", "电视剧:"], ["全部综艺", "综艺:"]];
+  var groups = {
+    "电视剧": ["喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"],
+    "综艺": ["真人秀", "脱口秀", "音乐", "歌舞"],
+  };
+  Object.keys(groups).forEach(function (format) {
+    groups[format].forEach(function (genre) { options.push([format + "·" + genre, format + ":" + genre]); });
+  });
+  return options;
+}
+
+function mediaSubfilter(name, title, options, mediaType) {
+  // An empty new field preserves a stored pre-1.2.0 filter. Explicit all must be distinct.
+  var choices = [["沿用已有筛选", ""]].concat(options.map(function (option) {
+    return Array.isArray(option) && option[1] === "" ? [option[0], "__all__"] : option;
+  }));
+  var param = choiceParam(name, title, choices);
+  param.belongTo = { paramName: "mediaType", value: [mediaType] };
+  return param;
+}
+
+function movieNativeCharts() {
+  // First-party category_tabs snapshot, 2026-10-18. No runtime directory dependency.
+  return {
+    "剧情": {"regions":{},"classic":"film_genre_27"},
+    "喜剧": {"regions":{"华语":"ECVUOUD7A","欧洲":"ECPQO4BPA","中国大陆":"ECKIO6SXI","美国":"ECGUO62ZA","中国香港":"ECOYO2QPA","中国台湾":"ECEAOX2BI","日本":"ECFIOT7JA","韩国":"ECOIOVQPY","英国":"EC6IOYROI","法国":"ECIEOY5UI","德国":"ECFQO5B4A","意大利":"ECREOTSEI","西班牙":"EC6UO37NQ","瑞典":"ECPMPBHBI","印度":"ECTIOYBOY","泰国":"ECAIO3EWI","加拿大":"ECYUPAHZY","澳大利亚":"ECKMOXL6Q","爱尔兰":"ECOAOZY7Y"},"recent":"ECAYN54KI","classic":"movie_comedy","underrated":"ECLYOFOKA"},
+    "爱情": {"regions":{"华语":"ECOIOTUGY","欧洲":"ECUAOYUCA","中国大陆":"EC64OQVEQ","美国":"EC4EOSAQA","中国台湾":"ECWQOQO4A","日本":"ECKMOVF3Y","韩国":"ECHIOXXIQ","英国":"ECHAO4AAQ","法国":"ECTAOT7GQ","德国":"ECNIOS7EQ","意大利":"EC3UOSWUY","西班牙":"ECU4OWMMI","瑞典":"ECCEOUVAA","印度":"ECLUOQWVY","泰国":"ECYQO7YPQ","加拿大":"ECEAOXFIQ","澳大利亚":"ECOUOXYUA","爱尔兰":"ECJMO2O5Y"},"recent":"ECSAOJFTA","classic":"movie_love","underrated":"EC2UOKRRQ"},
+    "动作": {"regions":{"华语":"EC2YO2M2A","欧洲":"ECHUOXOUA","美国":"ECPMPC7JA","中国台湾":"ECTMO64KY","日本":"ECBAPBW2Y","韩国":"ECWQOU2HI","英国":"ECCUPDBHQ","法国":"EC5UOWEFY","德国":"EC7AOW57Q","印度":"ECMQO4F2I","加拿大":"ECUQPDN7Y","澳大利亚":"EC4QPALEI"},"recent":"ECBUOLQGY","classic":"movie_action","underrated":"ECVIOHY6A"},
+    "科幻": {"regions":{"欧洲":"ECX4O7JAA","美国":"ECDAO6XZI","日本":"ECSYOV6GY","英国":"EC4UOZQ4Y","法国":"EC3MO34NI","德国":"ECOUO2ETY","加拿大":"ECX4PAGTA","澳大利亚":"ECTAOXLWQ"},"recent":"ECZYOJPLI","classic":"movie_scifi","underrated":"EC2IOENJA"},
+    "动画": {"regions":{"华语":"ECFMOYMKA","欧洲":"ECLYO57HA","美国":"EC4IPDWYI","日本":"ECLYO6JQQ","英国":"ECWUO3RJA","法国":"ECIQPF7NY","加拿大":"EC3YPB7WQ"},"recent":"EC3UOBDQY","classic":"film_genre_31","underrated":"ECTUO3I3A"},
+    "悬疑": {"regions":{"华语":"ECRMOX2JI","欧洲":"ECUMPB7SA","美国":"ECJUO3L7I","中国香港":"ECV4OU2WA","日本":"ECVYOVDIA","韩国":"ECSYOYZWI","英国":"EC5YPE3OI","法国":"ECQUO7FVQ","德国":"ECZQO7KSQ","意大利":"ECVEO7MPI","西班牙":"ECAYOVXFA","加拿大":"ECYMPDCTI","澳大利亚":"ECIMOWR2I"},"recent":"ECPQOJP5Q","classic":"film_genre_32","underrated":"ECK4OEBJY"},
+    "犯罪": {"regions":{"华语":"ECVUO4O4Q","欧洲":"EC5QO2HUI","中国大陆":"ECWAPHUIA","美国":"ECEAPADKY","中国香港":"EC3AOZZUY","日本":"ECVUO43DY","韩国":"ECGYO2SPA","英国":"ECVYOZNAI","法国":"ECFEPCR2A","德国":"ECVAPBWRI","意大利":"ECRMO4X7I","西班牙":"ECPAPDKZA","加拿大":"EC2MPBOOI","澳大利亚":"ECEMOZ6DI"},"recent":"ECLAN6LHQ","classic":"film_genre_46","underrated":"EC7EOG3RI"},
+    "惊悚": {"regions":{"华语":"EC5MPCA7Y","欧洲":"ECTMPCZTY","美国":"ECSYO3JKQ","日本":"ECFUO25PI","韩国":"ECTMPDECI","英国":"ECU4O6QYQ","法国":"ECPMPHOMI","德国":"ECJIPH4JA","意大利":"EC2QPBTHY","西班牙":"ECLMPAEZY","瑞典":"ECMIPBWCY","印度":"ECRQPBSYI","加拿大":"ECZMPDHQI","澳大利亚":"EC7QPFMYA"},"recent":"ECBUOL2DA","classic":"film_genre_33","underrated":"ECY4ODRSY"},
+    "冒险": {"regions":{"华语":"ECAUOWGNQ","欧洲":"ECW4O3GHY","美国":"ECOMON43Q","日本":"ECOUOVT2Q","英国":"ECFUORHLY","法国":"EC5YO53DI","德国":"ECMYOXC2Y","加拿大":"ECRYO5ULY","澳大利亚":"ECFIOR3MY"},"recent":"ECDYOE7WY","classic":"film_genre_49","underrated":"ECEMN5MLA"},
+    "家庭": {"regions":{},"classic":"film_genre_41"},
+    "儿童": {"regions":{},"classic":"film_genre_42"},
+    "音乐": {"regions":{"欧洲":"ECAQO25QI","美国":"ECUAOV5NA","日本":"ECFYORPYQ","英国":"ECAQO3LYY","法国":"ECYAORESI"},"classic":"film_genre_39","underrated":"EC2UOKJFQ"},
+    "历史": {"regions":{"华语":"ECV4N7YWY","欧洲":"ECIAOE4OY","美国":"ECK4OGBSA","中国香港":"ECPYOEZNY","日本":"EC54OCODY","韩国":"ECMAOINLA","英国":"ECSEOEISY","法国":"ECUMONVJQ","德国":"ECNQODGKI","意大利":"ECL4OLRCY"},"classic":"film_genre_44","underrated":"ECBAOKDHQ"},
+    "奇幻": {"regions":{"华语":"EC5MOJAZY","欧洲":"ECUMOLXQY","美国":"ECVIOIPDI","中国香港":"ECUUOJIFA","日本":"ECEIOJZTQ","韩国":"ECDAOLOSI","英国":"ECRAOGHZY","法国":"EC6QOILRA","德国":"EC4YOCBLQ"},"classic":"film_genre_48","underrated":"ECCMOLZQA"},
+    "恐怖": {"regions":{"华语":"EC54OE5HA","欧洲":"ECFAOK5WQ","美国":"ECGMORRUY","日本":"EC6QOMMWY","韩国":"ECFEOMHIQ","英国":"ECFUOGJDQ","法国":"ECHIOLPXA","西班牙":"ECWUOILKA","泰国":"EC2AOMMKY","加拿大":"ECVYODZIA","澳大利亚":"ECFYOIWBQ"},"recent":"ECV4N4FBI","classic":"film_genre_34","underrated":"ECTMOHSQY"},
+    "战争": {"regions":{"华语":"ECWUOKOLY","欧洲":"ECUIOKO6I","美国":"ECDYONLLI","中国香港":"ECO4OUYWI","日本":"ECFYOK3AQ","韩国":"EC2UOS6AQ","英国":"ECVIOP57A","法国":"EC6UOQ3TY","德国":"ECV4OGCIA","意大利":"ECYUOU5TA","俄罗斯":"ECF4OMYDQ"},"recent":"EC6MOCTVQ","classic":"film_genre_45","underrated":"ECGEOIWRA"},
+    "传记": {"regions":{"华语":"ECVYOEEUA","欧洲":"ECZIOQ6LY","美国":"ECE4OHQQY","英国":"ECNMONJTQ","法国":"ECYIOK3PY","德国":"ECAYOFADY","意大利":"ECLEOKFFQ","加拿大":"ECCUOUMXQ"},"recent":"EC3EOHEYY","classic":"film_genre_43","underrated":"ECRAODXXI"},
+    "歌舞": {"regions":{"欧洲":"EC3QOS5MA","美国":"ECYQOXMSA"},"classic":"film_genre_40","underrated":"ECZMOHQ3Q"},
+    "武侠": {"regions":{"华语":"ECEAOOAHI","中国大陆":"EC6YOLGQQ"},"classic":"film_genre_50","underrated":"ECWAOLLZQ"},
+    "情色": {"regions":{"华语":"ECKQOVFTY","欧洲":"ECVUONKTI","美国":"ECTQOQ6XQ","日本":"ECLUOK4TA","韩国":"ECDMOZMVI","英国":"ECA4OSUNA","法国":"ECDAOW2PY","意大利":"ECM4OVMRY"},"classic":"film_genre_37","underrated":"ECGYN6NHI"},
+    "灾难": {"regions":{"欧洲":"EC5IOQ75I","美国":"EC4IOWGKA"},"classic":"natural_disasters","underrated":"ECHMOGZLQ"},
+    "西部": {"regions":{"欧洲":"ECM4OWDGI","美国":"ECU4ORYVI"},"classic":"film_genre_47"},
+    "古装": {"regions":{},"classic":"film_genre_51"},
+    "运动": {"regions":{},"classic":"ECCEPGM4Y"},
+    "短片": {"regions":{},"classic":"film_genre_36"}
+  };
+}
+
+function movieYearlyCharts() {
+  return {
+    "2025": {"华语":"ECE472UNY","外语":"ECB5AE5EQ","冷门佳片":"ECFM7Z3AA","日本":"ECNI724YA","韩国":"EC45ABN2Y","喜剧":"ECANAAAGY","爱情":"ECM5AC2HQ","恐怖":"ECNA72CVA","动画":"ECKU74SFA","纪录":"ECDBAETMY"},
+    "2024": {"华语":"ECBE7RX5A","外语":"ECBQ7RNSA","冷门佳片":"ECSE7P7GQ","日本":"ECRY73E2Q","韩国":"ECBM7NLJA","喜剧":"ECLE7RV6Y","爱情":"ECHU7QOYQ","恐怖":"ECKY7RPLQ","动画":"ECZA7V7AA","纪录":"ECS47YXRQ"},
+    "2023": {"华语":"ECQ46F7XI","外语":"ECFA6FLWQ","冷门佳片":"ECMY6GCCA","日本":"ECCU6MRTY","韩国":"EC4Y6ALRA","喜剧":"ECCI6H3TA","爱情":"EC3A56FJA","恐怖":"ECYI6DWVQ","动画":"ECHU6BXBI","纪录":"ECRM6A2JA"},
+    "2022": {"华语":"ECKA55LSA","外语":"ECQU6DFQA","冷门佳片":"ECSQ6DBYA","日本":"ECEA6ANKY","韩国":"ECHM6DG7Y","喜剧":"EC4Y54ORI","爱情":"ECYU6IHKI","恐怖":"ECRI53OUQ","动画":"EC4M6ACVQ","纪录":"ECGY527GY"},
+    "2021": {"华语":"ECWY6B2GQ","外语":"ECNE54UQI","冷门佳片":"ECRA53WMI","喜剧":"ECJM6BMEA","爱情":"EC6A575FI","恐怖":"ECBM5YQVA","动画":"ECOY6BCBI","纪录":"ECLY57EVQ"},
+    "2020": {"华语":"EC2A5MRIY","外语":"ECIU5HIEQ","冷门佳片":"ECGY5FDUA","日本":"ECCA5MMHI","韩国":"EC3A5GQ5A","喜剧":"ECM45Q7VI","爱情":"ECBA5UC6Q","恐怖":"EC7U5TVBY","动画":"ECMY5PBHI","纪录":"EC4Q5SGKQ"},
+    "2019": {"华语":"ECFYHQBWQ","外语":"ECFQHXCTQ","冷门佳片":"ECOUHS3TY","喜剧":"ECBU6ENLI","爱情":"ECSY52PSI","动画":"EC7E57OPQ","纪录":"ECYQ6G4WI"},
+    "2018": {"华语":"2018_movie_1","外语":"2018_movie_0","冷门佳片":"2018_movie_14","日本":"2018_movie_5","韩国":"2018_movie_4","喜剧":"2018_movie_16","爱情":"2018_movie_17","恐怖":"2018_movie_19","动画":"2018_movie_20","纪录":"2018_movie_21"},
+    "2017": {"华语":"2017_movie_chinese_score","外语":"2017_movie_foreign_score","冷门佳片":"2017_movie_dark_horse","日本":"2017_movie_696","韩国":"2017_movie_695","喜剧":"2017_movie_699","爱情":"2017_movie_700","恐怖":"2017_movie_702","纪录":"2017_movie_686"},
+    "2016": {"华语":"2016_movie_451","外语":"2016_movie_272","冷门佳片":"2016_movie_456","日本":"2016_movie_459","韩国":"2016_movie_458","喜剧":"2016_movie_465","爱情":"2016_movie_466","恐怖":"2016_movie_468","动画":"2016_movie_469","纪录":"2016_movie_470"},
+    "2015": {"华语":"2015_movie_3","外语":"2015_movie_2","冷门佳片":"2015_movie_43","日本":"2015_movie_45","韩国":"2015_movie_44","动画":"2015_movie_54","纪录":"2015_movie_55"},
+    "2014": {"华语":"2014_movie_2","外语":"2014_movie_1","冷门佳片":"2014_movie_5","日本":"2014_movie_7","韩国":"2014_movie_6","动画":"2014_movie_9","纪录":"2014_movie_10"}
+  };
+}
+
+function nativeMovieOptions(category) {
+  var charts = movieNativeCharts();
+  var options = [];
+  Object.keys(charts).forEach(function (genre) {
+    var group = charts[genre];
+    if (category === "region") {
+      Object.keys(group.regions).forEach(function (region) {
+        options.push([region + "·" + genre, "native:" + group.regions[region]]);
+      });
+    } else if (group[category]) options.push([genre, "native:" + group[category]]);
+  });
+  return options;
+}
+
+function nativeYearlyOptions(charts) {
+  var options = [];
+  Object.keys(charts).sort().reverse().forEach(function (year) {
+    Object.keys(charts[year]).forEach(function (name) {
+      options.push([year + "·" + name, "native:" + charts[year][name]]);
+    });
+  });
+  return options;
+}
+
 function movieCatalogModule() {
-  var recent = [];
-  [["热门", "hot"], ["最新", "new"]].forEach(function (category) {
+  var recent = nativeMovieOptions("recent");
+  [["热门筛选", "hot"], ["最新筛选", "new"]].forEach(function (category) {
     ["全部", "华语", "欧美", "韩国", "日本"].forEach(function (region) {
       recent.push([category[0] + "·" + region, category[1] + ":" + region]);
     });
@@ -208,15 +281,40 @@ function movieCatalogModule() {
   return {
     id: "doubanMovies", title: "豆瓣电影", functionName: "loadMovieCatalog", type: "video", cacheDuration: 21600,
     params: [
-      choiceParam("category", "分类", [["全部", "all"], ["近期热门", "recent"], ["高分经典", "classic"], ["冷门佳作", "underrated"], ["地区佳作", "region"], ["分类题材", "genre"]]),
-      catalogSubfilter("recent", "近期热门", recent),
-      catalogSubfilter("classic", "高分经典", [["豆瓣 Top 250", "top250"], ["豆瓣高分·全部", "全部"], ["豆瓣高分·华语", "华语"], ["豆瓣高分·欧美", "欧美"], ["豆瓣高分·韩国", "韩国"], ["豆瓣高分·日本", "日本"]]),
-      catalogSubfilter("underrated", "冷门佳作", ["全部", "华语", "欧美", "韩国", "日本"]),
-      catalogSubfilter("region", "地区佳作（评分 8 分起）", catalogRegions()),
-      catalogSubfilter("genre", "分类题材", ["全部", "喜剧", "爱情", "动作", "科幻", "动画", "悬疑", "犯罪", "惊悚", "冒险", "音乐", "历史", "奇幻", "恐怖", "战争", "传记", "歌舞", "武侠", "灾难", "西部", "纪录片", "短片"]),
-      catalogSortParam(),
+      choiceParam("category", "分类", [["全部", "all"], ["近期热门", "recent"], ["高分经典", "classic"], ["冷门佳作", "underrated"], ["地区佳作", "region"], ["分类题材", "genre"], ["年度榜单", "yearly"]]),
+      catalogSubfilter("recent", "近期热门", recent, "hot:全部"),
+      catalogSubfilter("classic", "高分经典", [["豆瓣 Top 250", "top250"]].concat(nativeMovieOptions("classic"))),
+      catalogSubfilter("underrated", "冷门佳作", nativeMovieOptions("underrated")),
+      catalogSubfilter("region", "地区 · 题材原生榜", nativeMovieOptions("region")),
+      catalogSubfilter("genre", "题材高分经典", nativeMovieOptions("classic")),
+      catalogSubfilter("yearly", "年度 · 分类", nativeYearlyOptions(movieYearlyCharts())),
+      Object.assign(catalogSortParam(), { belongTo: { paramName: "category", value: ["all"] }, description: "仅用于全部；原生榜单保留豆瓣顺序" }),
       { name: "page", title: "页码", type: "page" },
     ],
+  };
+}
+
+async function loadNativeCollection(id, mediaType, page) {
+  var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + id +
+    "/items?start=" + ((page - 1) * 20) + "&count=20&items_only=1&for_mobile=1";
+  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
+  return mapSubjects(data.subject_collection_items || [], mediaType);
+}
+
+function tvYearlyCharts() {
+  return {
+    "2025": {"华语剧集":"EC2FACYKQ","英美新剧":"ECHNAB4LY","英美续订":"ECWQ7ZJGY","日本剧集":"ECPNAHZ2A","韩国剧集":"EC7VAFY4Q","综艺":"EC647Z33A","动画":"ECQM7YUOQ","纪录":"ECIM7ZJCI","微短剧":"EC2RAB7MY"},
+    "2024": {"华语剧集":"ECYA7RAZQ","英美新剧":"EC5U7O7WY","英美续订":"ECOY7WR4I","日本剧集":"ECRE7PJSQ","韩国剧集":"ECMM7RKRA","综艺":"ECTE7TV3Y","动画":"ECHQ7SAPY","纪录":"ECDM74KXY"},
+    "2023": {"华语剧集":"ECTE6EOZA","英美新剧":"ECUI6CVAI","英美续订":"ECM46I42A","日本剧集":"ECPE6B6NI","韩国剧集":"EC246FT6Y","综艺":"EC7I6GR6A","动画":"EC3Q6JTOQ","纪录":"ECCU6NNCI"},
+    "2022": {"华语剧集":"ECWU56XUI","英美新剧":"ECQY6HRQQ","英美续订":"ECMU6H5VY","日本剧集":"ECRY6I6FA","韩国剧集":"EC2Y6BEGQ","综艺":"EC4U6BXLA","动画":"ECRI533KQ","纪录":"ECR455GTQ"},
+    "2021": {"华语剧集":"ECOY56I6Y","英美新剧":"EC5U5X5FA","英美续订":"ECEI6A5ZI","日本剧集":"ECZQ6AD6Y","韩国剧集":"ECNI5ZBSQ","动画":"ECGA6CUPA","纪录":"ECPY52QZY"},
+    "2020": {"华语剧集":"ECCM5TXSI","英美新剧":"ECSA5PTFI","英美续订":"ECZU5SJAI","日本剧集":"ECBI5KPKY","韩国剧集":"ECJM5OL6Y"},
+    "2019": {"华语剧集":"ECR4HOW3I","英美新剧":"ECS4HX5JI","英美续订":"ECS4HX6GQ","日本剧集":"EC2AHUXEA","韩国剧集":"ECR4HO7JA"},
+    "2018": {"华语剧集":"2018_tv_23","英美新剧":"2018_tv_24","英美续订":"2018_tv_25","日本剧集":"2018_tv_26","韩国剧集":"2018_tv_27","动画":"2018_tv_28","纪录":"2018_tv_29"},
+    "2017": {"华语剧集":"2017_tv_domestic_score","英美新剧":"2017_tv_american_score","英美续订":"2017_tv_743","日本剧集":"2017_tv_740","韩国剧集":"2017_tv_741","动画":"2017_tv_706","纪录":"2017_tv_707"},
+    "2016": {"华语剧集":"2016_tv_478","英美新剧":"2016_tv_472","英美续订":"2016_tv_474","日本剧集":"2016_tv_482","韩国剧集":"2016_tv_481","动画":"2016_tv_486","纪录":"2016_tv_487"},
+    "2015": {"华语剧集":"2015_tv_6","英美新剧":"2015_tv_7","英美续订":"2015_tv_13","日本剧集":"2015_tv_14","韩国剧集":"2015_tv_15","动画":"2015_tv_60"},
+    "2014": {"华语剧集":"2014_tv_14","英美新剧":"2014_tv_13","英美续订":"2014_tv_12","日本剧集":"2014_tv_16","韩国剧集":"2014_tv_15"}
   };
 }
 
@@ -224,11 +322,12 @@ function tvCatalogModule() {
   return {
     id: "doubanTelevision", title: "豆瓣电视", functionName: "loadTvCatalog", type: "video", cacheDuration: 21600,
     params: [
-      choiceParam("category", "分类", [["全部", "all"], ["高分经典", "classic"], ["近期热门", "recent"], ["冷门佳作", "underrated"], ["分类题材", "genre"]]),
+      choiceParam("category", "分类", [["全部", "all"], ["高分经典", "classic"], ["近期热门", "recent"], ["冷门佳作", "underrated"], ["分类题材", "genre"], ["年度榜单", "yearly"]]),
       catalogSubfilter("classic", "原生高分经典榜", nativeTvRegions("classic")),
-      catalogSubfilter("recent", "近期热门", [["全部剧集", "tv"], ["大陆剧", "tv_domestic"], ["美剧 / 欧美剧", "tv_american"], ["日剧", "tv_japanese"], ["韩剧", "tv_korean"], ["动画", "tv_animation"], ["纪录片", "tv_documentary"], ["全部综艺", "show"], ["国内综艺", "show_domestic"], ["国外综艺", "show_foreign"]]),
+      catalogSubfilter("recent", "近期热门", nativeTvRegions("recent").map(function (region) { return [region, "native:" + tvNativeCharts()[region].recent]; }).concat([["全部剧集筛选", "tv"], ["国产剧筛选", "tv_domestic"], ["欧美剧筛选", "tv_american"], ["日剧筛选", "tv_japanese"], ["韩剧筛选", "tv_korean"], ["动画", "tv_animation"], ["纪录片", "tv_documentary"], ["全部综艺", "show"], ["国内综艺", "show_domestic"], ["国外综艺", "show_foreign"]]), "tv"),
       catalogSubfilter("underrated", "原生冷门佳作榜", nativeTvRegions("underrated")),
       catalogSubfilter("genre", "原生地区题材榜", nativeTvGenreOptions()),
+      catalogSubfilter("yearly", "年度 · 分类", nativeYearlyOptions(tvYearlyCharts())),
       Object.assign(catalogSortParam(), { belongTo: { paramName: "category", value: ["all"] }, description: "仅用于全部；原生榜单保留豆瓣顺序" }),
       { name: "page", title: "页码", type: "page" },
     ],
@@ -774,7 +873,10 @@ async function mapSubjectToVideo(subject, useCache) {
 
 async function mapSubjects(rawItems, fallbackType, useCache) {
   var sourceSeen = Object.create(null);
-  var subjects = rawItems.map(function (raw) { return normalizeDoubanSubject(raw, fallbackType); }).filter(function (subject) {
+  var subjects = rawItems.filter(function (raw) {
+    return raw && raw.type !== "ad" && (!raw.card || raw.card === "subject");
+  }).map(function (raw) { return normalizeDoubanSubject(raw, fallbackType); }).filter(function (subject) {
+    if (!subject.id || !subject.title || ["movie", "tv", "book", "music"].indexOf(subject.kind) < 0) return false;
     var key = subject.kind + ":" + subject.id;
     if (sourceSeen[key]) return false;
     sourceSeen[key] = true;
@@ -888,8 +990,10 @@ async function loadCustomList(params) {
 async function loadRecommendations(params) {
   params = params || {};
   var mediaType = normalizeMediaType(params.mediaType || "movie");
-  var category = String(params.category || (mediaType === "movie" ? "热门" : "tv"));
-  var region = String(params.region || (mediaType === "movie" ? "全部" : category));
+  var tvRegion = params.tvRegion == null ? null : String(params.tvRegion);
+  var category = String(mediaType === "movie" ? (params.movieCategory || params.category || "热门") :
+    (tvRegion ? (tvRegion.indexOf("show") === 0 ? "show" : "tv") : params.category || "tv"));
+  var region = String(mediaType === "movie" ? (params.movieRegion || params.region || "全部") : tvRegion || params.region || category);
   var validMovie = mediaType === "movie" && MOVIE_RECOMMENDATION_CATEGORIES.indexOf(category) >= 0 &&
     MOVIE_RECOMMENDATION_REGIONS.indexOf(region) >= 0;
   var validTv = mediaType === "tv" && TV_RECOMMENDATION_REGIONS[category] &&
@@ -909,6 +1013,10 @@ async function loadMovieCatalog(params) {
   var module = movieCatalogModule();
   var category = selectedCatalogValue(module, "category", params.category);
   var page = pageNumber(params.page);
+  if (category === "yearly" || category !== "all" && (params[category] == null || String(params[category]).indexOf("native:") === 0)) {
+    var selection = selectedCatalogValue(module, category, params[category]);
+    if (selection.indexOf("native:") === 0) return loadNativeCollection(selection.slice(7), "movie", page);
+  }
   if (category === "recent") {
     var recent = selectedCatalogValue(module, "recent", params.recent);
     if (recent === "showing" || recent === "realtime") return loadPublicCollections({ collection: recent === "showing" ? "movie_showing" : "movie_hot", page: page });
@@ -916,19 +1024,22 @@ async function loadMovieCatalog(params) {
     return loadRecommendations({ mediaType: "movie", category: parts[0] === "new" ? "最新" : "热门", region: parts[1], page: page });
   }
   if (category === "classic") {
-    var classic = selectedCatalogValue(module, "classic", params.classic);
+    var classic = String(params.classic || "top250");
+    if (classic !== "top250" && MOVIE_RECOMMENDATION_REGIONS.indexOf(classic) < 0) throw new Error("不支持的高分经典");
     if (classic === "top250") return loadPublicCollections({ collection: "movie_top250", page: page });
     return loadRecommendations({ mediaType: "movie", category: "豆瓣高分", region: classic, page: page });
   }
-  if (category === "underrated") return loadRecommendations({ mediaType: "movie", category: "冷门佳片", region: selectedCatalogValue(module, "underrated", params.underrated), page: page });
+  if (category === "underrated") return loadRecommendations({ mediaType: "movie", category: "冷门佳片", region: params.underrated, page: page });
   var options = { mediaType: "movie", offset: (page - 1) * 20, sort: selectedCatalogValue(module, "sort", params.sort) };
   if (category === "region") {
-    var region = selectedCatalogValue(module, "region", params.region);
+    var region = String(params.region || "全部");
+    if (catalogRegions().indexOf(region) < 0) throw new Error("不支持的地区佳作");
     options.region = region === "全部" ? "" : region;
     options.minRating = "8";
   }
   if (category === "genre") {
-    var genre = selectedCatalogValue(module, "genre", params.genre);
+    var genre = String(params.genre || "全部");
+    if (genre !== "全部" && genre !== "纪录片" && !movieNativeCharts()[genre]) throw new Error("不支持的分类题材");
     options.genre = genre === "全部" ? "" : genre;
   }
   return loadPreferenceExplore(options);
@@ -951,11 +1062,15 @@ async function loadTvCatalog(params) {
   var module = tvCatalogModule();
   var category = selectedCatalogValue(module, "category", params.category);
   var page = pageNumber(params.page);
+  if (category === "yearly") {
+    return loadNativeCollection(selectedCatalogValue(module, "yearly", params.yearly).slice(7), "tv", page);
+  }
   if (category === "classic" || category === "underrated") {
     return loadNativeTvChart(category, params[category] || nativeTvRegions(category)[0], page);
   }
   if (category === "recent") {
     var recent = selectedCatalogValue(module, "recent", params.recent);
+    if (recent.indexOf("native:") === 0) return loadNativeCollection(recent.slice(7), "tv", page);
     return loadRecommendations({ mediaType: "tv", category: recent.indexOf("show") === 0 ? "show" : "tv", region: recent, page: page });
   }
   var options = { mediaType: "tv", offset: (page - 1) * 20, sort: selectedCatalogValue(module, "sort", params.sort) };
@@ -984,16 +1099,38 @@ async function fetchPreferenceSubjects(params) {
   params = params || {};
   var mediaType = normalizeMediaType(params.mediaType || "movie");
   if (!mediaType) throw new Error("偏好类型必须是 movie 或 tv");
+  var genre = params.genre || "";
+  var format = params.format || "";
+  var region = params.region || "";
+  if (mediaType === "movie") {
+    if (params.movieGenre) genre = params.movieGenre === "__all__" ? "" : params.movieGenre;
+    if (params.movieRegion) region = params.movieRegion === "__all__" ? "" : params.movieRegion;
+    // TV-only controls can remain saved when the user switches media type.
+    format = "";
+  } else {
+    if (params.tvRegion) region = params.tvRegion === "__all__" ? "" : params.tvRegion;
+    if (params.tvGenre === "__all__") {
+      format = "";
+      genre = "";
+    } else if (params.tvGenre) {
+      var selection = String(params.tvGenre);
+      if (!tvExploreOptions().some(function (option) { return option[1] === selection; })) throw new Error("不支持的电视筛选类型");
+      var parts = selection.split(":");
+      format = parts[0];
+      genre = parts[1] || "";
+    }
+  }
   var rating = String(params.minRating == null ? "0" : params.minRating);
   if (!/^(?:[0-9])$/.test(rating)) throw new Error("最低评分必须是 0 到 9 的整数");
   var offsetValue = Number(params.offset == null ? 0 : params.offset);
   var offset = Number.isFinite(offsetValue) && offsetValue >= 0 ? Math.floor(offsetValue) : 0;
   var selected = {
-    "类型": String(params.genre || ""),
-    "地区": String(params.region || ""),
-    "形式": String(params.format || ""),
+    "类型": String(genre),
+    "地区": String(region),
+    "形式": String(format),
   };
-  var tags = [params.genre, params.format, params.region, params.year, params.platform]
+  var year = String(params.year || "").trim().replace(/^19([6-9]0年代)$/, "$1");
+  var tags = [genre, format, region, year, params.platform]
     .concat(String(params.tags || "").split(","))
     .map(function (value) { return String(value || "").trim(); })
     .filter(Boolean);

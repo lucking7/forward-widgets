@@ -57,12 +57,12 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/trending
 单文件按用途提供清晰入口，并保留原有配置所用的模块 ID 和函数：
 
 - **豆瓣一周口碑**：电影、华语剧集、全球剧集、国内综艺、全球综艺五榜。
-- **豆瓣电影**：全部、近期热门、高分经典、冷门佳作、地区佳作、分类题材；继续按热门/最新、地区、题材和排序细分。
-- **豆瓣电视**：全部、高分经典、近期热门、冷门佳作、分类题材；近期热门包含大陆剧、美剧/欧美剧、日剧、韩剧、动画、纪录片以及国内外综艺，题材区分电视剧与综艺。
+- **豆瓣电影**：全部、近期热门、高分经典、冷门佳作、地区佳作、分类题材、年度榜单；接入 26 个题材的 241 个原生榜及 2014–2025 年的 108 个年度榜。
+- **豆瓣电视**：全部、高分经典、近期热门、冷门佳作、分类题材、年度榜单；接入 56 个地区/题材原生榜及 2014–2025 年的 82 个年度榜，保留动画、纪录片和综艺筛选。
 - **豆瓣实时热门**：书影音综合榜、电影榜、电视榜。图书和音乐作为信息条目展示，不当作电影查询 TMDB。
 - 保留自定义片单、分类推荐、偏好探索、我看、Cookie 个性推荐和影人作品，旧首页的模块 ID 及参数仍可继续使用。
 
-电视高分经典、冷门佳作和地区题材使用豆瓣原生 `subject_collection`，完整分类来自 `category_tabs`，保留榜单原始成员和顺序，不使用评分或人数阈值替代。电影“地区佳作”以评分 ≥ 8 为条件。分类和来源核查见 [API 记录](docs/douban-api-2026-10-18.md)。
+电影和电视的原生榜来自第一方 `category_tabs`，直接读取 `subject_collection`，保留榜单成员与顺序。自由筛选继续保留，界面按电影、剧集/综艺显示有效条件，并过滤广告卡片。完整接口范围与验证边界见 [接口审计](docs/douban-interface-audit-2026-10-18.md)。
 
 影视匹配保留媒体类型、标题、年份和唯一性约束，并在需要时补充豆瓣详情与原名。季度剧集只有在 TMDB 对应季号及该季年份也一致时才匹配到主剧。无法安全匹配时显示豆瓣详情，不按搜索第一项猜测。
 
@@ -88,6 +88,7 @@ https://raw.githubusercontent.com/lucking7/forward-widgets/main/widgets/trending
 npm test
 npm run test:douban
 npm run test:douban:live
+node audit-douban-interfaces.cjs /tmp/douban-interface-results.json
 npm run test:trending
 npm run test:flow
 npm run test:live
