@@ -4,7 +4,7 @@ WidgetMetadata = {
   title: "豆瓣全景",
   description: "一周口碑、电影与电视分类、实时书影音和可靠详情匹配",
   author: "lucking7",
-  version: "1.2.0",
+  version: "1.2.1",
   requiredVersion: "0.0.2",
   site: "https://github.com/lucking7/forward-widgets",
   modules: [
@@ -175,14 +175,19 @@ function allChoice(value) {
   return value === "" ? ["全部", ""] : value;
 }
 
+function tvGenreRules() {
+  return {
+    tv: { format: "电视剧", genres: ["喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"] },
+    show: { format: "综艺", genres: ["真人秀", "脱口秀", "音乐", "歌舞"] },
+  };
+}
+
 function tvExploreOptions() {
   var options = [["全部", ""], ["全部剧集", "电视剧:"], ["全部综艺", "综艺:"]];
-  var groups = {
-    "电视剧": ["喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"],
-    "综艺": ["真人秀", "脱口秀", "音乐", "歌舞"],
-  };
-  Object.keys(groups).forEach(function (format) {
-    groups[format].forEach(function (genre) { options.push([format + "·" + genre, format + ":" + genre]); });
+  var rules = tvGenreRules();
+  Object.keys(rules).forEach(function (kind) {
+    var rule = rules[kind];
+    rule.genres.forEach(function (genre) { options.push([rule.format + "·" + genre, rule.format + ":" + genre]); });
   });
   return options;
 }
@@ -294,11 +299,14 @@ function movieCatalogModule() {
   };
 }
 
+async function fetchSubjectCollectionItems(id, start, count) {
+  var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + encodeURIComponent(id) +
+    "/items?start=" + start + "&count=" + count + "&items_only=1&for_mobile=1";
+  return responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }), "subject_collection_items");
+}
+
 async function loadNativeCollection(id, mediaType, page) {
-  var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + id +
-    "/items?start=" + ((page - 1) * 20) + "&count=20&items_only=1&for_mobile=1";
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  return mapSubjects(data.subject_collection_items || [], mediaType);
+  return mapSubjects(await fetchSubjectCollectionItems(id, (page - 1) * 20, 20), mediaType);
 }
 
 function tvYearlyCharts() {
@@ -461,10 +469,8 @@ async function loadNativeTvChart(category, selection, page) {
   var regions = charts[selection] ? [selection] : legacyRegions[selection];
   if (regions) regions = regions.filter(function (region) { return charts[region] && charts[region][category]; });
   if (!regions || !regions.length) throw new Error("该地区暂无原生榜单，请重新选择电视榜单地区");
-  var pages = await Promise.all(regions.map(async function (region) {
-    var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + charts[region][category] +
-      "/items?start=" + ((page - 1) * 20) + "&count=20&items_only=1&for_mobile=1";
-    return responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS })).subject_collection_items || [];
+  var pages = await Promise.all(regions.map(function (region) {
+    return fetchSubjectCollectionItems(charts[region][category], (page - 1) * 20, 20);
   }));
   return mapSubjects([].concat.apply([], pages), "tv");
 }
@@ -536,6 +542,13 @@ function responseData(response) {
   }
 }
 
+function responseList(response, field) {
+  var data = responseData(response);
+  var items = field ? data && data[field] : data;
+  if (!Array.isArray(items)) throw new Error("豆瓣响应结构错误: " + (field || "root") + " 必须是数组");
+  return items;
+}
+
 function pageNumber(value) {
   var parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
@@ -566,8 +579,9 @@ function yearFromValue(value) {
 function normalizeDoubanSubject(raw, fallbackType) {
   var subject = raw && (raw.subject || raw.target || raw.work) || raw || {};
   var id = subject.id != null ? subject.id : raw && raw.target_id;
-  var type = normalizeMediaType(subject.type, fallbackType);
-  var kind = subject.kind || (subject.type === "book" || subject.type === "music" ? subject.type : type) || "movie";
+  var declaredType = subject.type || subject.kind;
+  var type = normalizeMediaType(declaredType, fallbackType);
+  var kind = declaredType === "book" || declaredType === "music" ? declaredType : type;
   var ratingValue = subject.rating && typeof subject.rating === "object" ? subject.rating.value : subject.rating;
   return {
     id: id == null ? "" : String(id),
@@ -646,6 +660,7 @@ function doubanFallbackItem(subject) {
     posterPath: subject.posterPath,
     coverUrl: subject.posterPath,
     releaseDate: subject.releaseDate,
+    year: subject.year ? String(subject.year) : undefined,
     genreItems: (subject.genres || []).map(function (genre) { return { id: genre, title: genre }; }),
     peoples: detailPeople(subject),
   };
@@ -722,13 +737,20 @@ async function loadDetail(link) {
 
 function tmdbVideoItem(subject, candidate) {
   var mediaType = subject.type;
-  var releaseDate = mediaType === "movie" ? candidate.release_date : candidate.first_air_date;
+  var season = seasonIdentity(subject);
+  var matchedSeason = candidate.matchedSeason;
+  if ((season || matchedSeason) && (!matchedSeason || !Number.isInteger(matchedSeason.number) || matchedSeason.number < 1 ||
+    !yearFromValue(matchedSeason.airDate) || (season && matchedSeason.number !== season.number))) {
+    return doubanFallbackItem(subject);
+  }
+  var releaseDate = matchedSeason ? matchedSeason.airDate : mediaType === "movie" ? candidate.release_date : candidate.first_air_date;
   return {
     id: Number(candidate.id),
     tmdbId: candidate.id,
     type: "tmdb",
     mediaType: mediaType,
-    title: seasonIdentity(subject) ? subject.title : candidate.title || candidate.name || subject.title,
+    title: matchedSeason ? matchedSeason.title || subject.title : candidate.title || candidate.name || subject.title,
+    season: matchedSeason ? matchedSeason.number : undefined,
     description: candidate.overview || subject.description,
     releaseDate: releaseDate,
     year: releaseDate ? String(releaseDate).slice(0, 4) : undefined,
@@ -740,7 +762,7 @@ function tmdbVideoItem(subject, candidate) {
 
 function mappingCacheKey(subject) {
   return [
-    "douban_tmdb_v2",
+    "douban_tmdb_v3",
     subject.id,
     subject.type,
     subject.year || "",
@@ -816,7 +838,9 @@ async function selectSeasonCandidate(subject, candidates) {
     var seasons = (detail.seasons || []).filter(function (item) {
       return Number(item.season_number) === season.number && yearFromValue(item.air_date) === subject.year;
     });
-    if (seasons.length === 1) matches.push(candidate);
+    if (seasons.length === 1) matches.push(Object.assign({}, candidate, {
+      matchedSeason: { number: season.number, airDate: seasons[0].air_date, title: subject.title },
+    }));
   }
   return matches.length === 1 ? matches[0] : null;
 }
@@ -898,7 +922,7 @@ async function mapSubjects(rawItems, fallbackType, useCache) {
   await Promise.all(workers);
   var seen = Object.create(null);
   return results.filter(function (item) {
-    var key = [item.type || "", item.mediaType || "", item.type === "url" ? item.link : item.id || ""].join(":");
+    var key = [item.type || "", item.mediaType || "", item.type === "url" ? item.link : item.id || "", item.season || ""].join(":");
     if (seen[key]) return false;
     seen[key] = true;
     return true;
@@ -914,13 +938,10 @@ async function loadPublicHighlights(page) {
     { id: "tv_animation", type: "tv" },
   ];
   var responses = await Promise.all(definitions.map(function (definition) {
-    var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + definition.id +
-      "/items?start=0&count=12&items_only=1&for_mobile=1";
-    return Widget.http.get(url, { headers: DOUBAN_HEADERS });
+    return fetchSubjectCollectionItems(definition.id, 0, 12);
   }));
   var subjects = [];
-  responses.forEach(function (response, index) {
-    var items = responseData(response).subject_collection_items || [];
+  responses.forEach(function (items, index) {
     items.slice(0, 3).forEach(function (item) {
       subjects.push(normalizeDoubanSubject(item, definitions[index].type));
     });
@@ -937,12 +958,9 @@ async function loadPublicCollections(params) {
   if (!collection) throw new Error("不支持的豆瓣公开榜单");
   var tagFallback = DOUBAN_TAG_FALLBACKS[key];
   var start = (page - 1) * 20;
-  var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + collection.id +
-    "/items?start=" + start + "&count=20&items_only=1&for_mobile=1";
   var items;
   try {
-    var response = await Widget.http.get(url, { headers: DOUBAN_HEADERS });
-    items = responseData(response).subject_collection_items || [];
+    items = await fetchSubjectCollectionItems(collection.id, start, 20);
   } catch (error) {
     if (!tagFallback) throw error;
     items = [];
@@ -951,7 +969,7 @@ async function loadPublicCollections(params) {
     var tagUrl = "https://movie.douban.com/j/search_subjects?type=" + tagFallback.type +
       "&tag=" + encodeURIComponent(tagFallback.tag) + "&sort=recommend&page_limit=20&page_start=" + start;
     var tagResponse = await Widget.http.get(tagUrl, { headers: DOUBAN_HEADERS });
-    items = responseData(tagResponse).subjects || [];
+    items = responseList(tagResponse, "subjects");
   }
   return mapSubjects(items, collection.type);
 }
@@ -975,14 +993,10 @@ async function loadCustomList(params) {
     var doulistStart = (page - 1) * 25;
     url = "https://m.douban.com/rexxar/api/v2/doulist/" + parsed.id +
       "/items?start=" + doulistStart + "&count=25&items_only=1&for_mobile=1";
-    var doulistData = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-    items = doulistData.items || [];
+    items = responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }), "items");
   } else {
     var collectionStart = (page - 1) * 20;
-    url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + parsed.id +
-      "/items?start=" + collectionStart + "&count=20&items_only=1&for_mobile=1";
-    var collectionData = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-    items = collectionData.subject_collection_items || [];
+    items = await fetchSubjectCollectionItems(parsed.id, collectionStart, 20);
   }
   return mapSubjects(items, "");
 }
@@ -1004,8 +1018,7 @@ async function loadRecommendations(params) {
   var url = "https://m.douban.com/rexxar/api/v2/subject/recent_hot/" + mediaType +
     "?start=" + start + "&limit=20&category=" + encodeURIComponent(category) +
     "&type=" + encodeURIComponent(region);
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  return mapSubjects(data.items || [], mediaType);
+  return mapSubjects(responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }), "items"), mediaType);
 }
 
 async function loadMovieCatalog(params) {
@@ -1051,10 +1064,7 @@ async function loadRealtimeHot(params) {
   var collections = { all: "subject_real_time_hotest", movie: "movie_real_time_hotest", tv: "tv_real_time_hotest" };
   if (!Object.prototype.hasOwnProperty.call(collections, kind)) throw new Error("不支持的实时热门榜");
   var start = (pageNumber(params.page) - 1) * 20;
-  var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + collections[kind] +
-    "/items?start=" + start + "&count=20&items_only=1&for_mobile=1";
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  return mapSubjects(data.subject_collection_items || [], kind === "all" ? "" : kind);
+  return mapSubjects(await fetchSubjectCollectionItems(collections[kind], start, 20), kind === "all" ? "" : kind);
 }
 
 async function loadTvCatalog(params) {
@@ -1076,20 +1086,14 @@ async function loadTvCatalog(params) {
   var options = { mediaType: "tv", offset: (page - 1) * 20, sort: selectedCatalogValue(module, "sort", params.sort) };
   if (category === "genre") {
     if (!params.genre || String(params.genre).indexOf("native:") === 0) {
-      var chart = selectedCatalogValue(module, "genre", params.genre).slice(7);
-      var url = "https://m.douban.com/rexxar/api/v2/subject_collection/" + chart +
-        "/items?start=" + ((page - 1) * 20) + "&count=20&items_only=1&for_mobile=1";
-      var response = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-      return mapSubjects(response.subject_collection_items || [], "tv");
+      return loadNativeCollection(selectedCatalogValue(module, "genre", params.genre).slice(7), "tv", page);
     }
     // Retain the 1.1.0 generic genre values saved in existing home configurations.
     var parts = String(params.genre).split(":");
-    var legacyGenres = {
-      tv: ["", "喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"],
-      show: ["", "真人秀", "脱口秀", "音乐", "歌舞"],
-    };
-    if (parts.length !== 2 || !legacyGenres[parts[0]] || legacyGenres[parts[0]].indexOf(parts[1]) < 0) throw new Error("不支持的电视题材");
-    options.format = parts[0] === "show" ? "综艺" : "电视剧";
+    var rules = tvGenreRules();
+    var rule = Object.prototype.hasOwnProperty.call(rules, parts[0]) ? rules[parts[0]] : null;
+    if (parts.length !== 2 || !rule || (parts[1] && rule.genres.indexOf(parts[1]) < 0)) throw new Error("不支持的电视题材");
+    options.format = rule.format;
     options.genre = parts[1];
   }
   return loadPreferenceExplore(options);
@@ -1099,6 +1103,11 @@ async function fetchPreferenceSubjects(params) {
   params = params || {};
   var mediaType = normalizeMediaType(params.mediaType || "movie");
   if (!mediaType) throw new Error("偏好类型必须是 movie 或 tv");
+  var module = WidgetMetadata.modules.find(function (item) { return item.id === "doubanExplore"; });
+  var fields = mediaType === "movie" ? ["movieGenre", "movieRegion"] : ["tvGenre", "tvRegion"];
+  fields.forEach(function (field) {
+    if (params[field] != null) selectedCatalogValue(module, field, params[field]);
+  });
   var genre = params.genre || "";
   var format = params.format || "";
   var region = params.region || "";
@@ -1114,7 +1123,6 @@ async function fetchPreferenceSubjects(params) {
       genre = "";
     } else if (params.tvGenre) {
       var selection = String(params.tvGenre);
-      if (!tvExploreOptions().some(function (option) { return option[1] === selection; })) throw new Error("不支持的电视筛选类型");
       var parts = selection.split(":");
       format = parts[0];
       genre = parts[1] || "";
@@ -1144,8 +1152,7 @@ async function fetchPreferenceSubjects(params) {
     "&uncollect=false&score_range=" + encodeURIComponent(rating + ",10") +
     "&tags=" + encodeURIComponent(uniqueTags.join(",")) +
     "&sort=" + encodeURIComponent(String(params.sort || "U"));
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  return (data.items || []).filter(function (item) { return !item.card || item.card === "subject"; });
+  return responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }), "items");
 }
 
 async function loadPreferenceExplore(params) {
@@ -1156,8 +1163,7 @@ async function loadPreferenceExplore(params) {
 async function fetchInterestSubjects(userId, status, start, count) {
   var url = "https://m.douban.com/rexxar/api/v2/user/" + encodeURIComponent(userId) +
     "/interests?status=" + encodeURIComponent(status) + "&start=" + start + "&count=" + count;
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  return (data.interests || []).map(function (item) { return item.subject || item; });
+  return responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }), "interests").map(function (item) { return item.subject || item; });
 }
 
 async function loadInterests(params) {
@@ -1216,8 +1222,7 @@ async function loadPersonalized(params) {
   var response = await Widget.http.get(url, { headers: headers, allow_redirects: false });
   var status = Number(response && (response.status || response.statusCode));
   if (status >= 300 && status < 400) throw new Error("豆瓣个性推荐拒绝跨域重定向");
-  var data = responseData(response);
-  return mapSubjects(data.items || [], mediaType, false);
+  return mapSubjects(responseList(response, "items"), mediaType, false);
 }
 
 async function resolvePersonId(person) {
@@ -1228,10 +1233,10 @@ async function resolvePersonId(person) {
   if (urlMatch) return urlMatch[1];
   if (/^[a-z]+:\/\//i.test(input)) throw new Error("仅支持豆瓣影人 URL");
   var url = "https://movie.douban.com/j/subject_suggest?q=" + encodeURIComponent(input);
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
+  var data = responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
   var normalizedInput = normalizeIdentityTitle(input);
   var ids = [];
-  (Array.isArray(data) ? data : []).forEach(function (candidate) {
+  data.forEach(function (candidate) {
     if (candidate.type !== "celebrity") return;
     if (normalizeIdentityTitle(candidate.title || candidate.name) !== normalizedInput) return;
     var id = String(candidate.id || "");
@@ -1249,7 +1254,6 @@ async function loadPeopleWorks(params) {
   var sort = String(params.sort || "time");
   var url = "https://m.douban.com/rexxar/api/v2/celebrity/" + personId +
     "/works?start=" + start + "&count=50&sort=" + encodeURIComponent(sort);
-  var data = responseData(await Widget.http.get(url, { headers: DOUBAN_HEADERS }));
-  var works = (data.works || []).map(function (item) { return item.work || item; });
+  var works = responseList(await Widget.http.get(url, { headers: DOUBAN_HEADERS }), "works").map(function (item) { return item.work || item; });
   return mapSubjects(works, "");
 }

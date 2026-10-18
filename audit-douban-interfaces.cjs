@@ -3,7 +3,10 @@ const vm = require('node:vm');
 const path = require('node:path');
 const repo = __dirname;
 const source = fs.readFileSync(path.join(repo, 'widgets/douban/douban-discovery.js'), 'utf8');
-const sourceSha256 = require('node:crypto').createHash('sha256').update(source).digest('hex');
+const crypto = require('node:crypto');
+const sourceSha256 = crypto.createHash('sha256').update(source).digest('hex');
+const auditScriptSha256 = crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex');
+const startedAt = new Date().toISOString();
 const output = path.resolve(process.argv[2] || 'douban-interface-results.json');
 const cases = [];
 const caseKeys = new Set();
@@ -93,7 +96,7 @@ add('pagination', 'loadTvCatalog', { category: 'underrated', underrated: '美剧
     }
   }
   await Promise.all([worker(), worker(), worker()]);
-  const summary = { completedAt: new Date().toISOString(), sourceSha256, version: metadata.version, cases: cases.length, uniqueRequests: requests.size, ok: results.filter(x => x.status === 'ok').length, empty: results.filter(x => x.status === 'empty').length, errors: results.filter(x => x.status === 'error').length, notLiveTested: ['Authenticated personalized recommendations', 'Private interests', 'REX Widget.tmdb transport and UI rendering'], results };
+  const summary = { startedAt, completedAt: new Date().toISOString(), sourceSha256, auditScriptSha256, nodeVersion: process.version, version: metadata.version, cases: cases.length, uniqueRequests: requests.size, ok: results.filter(x => x.status === 'ok').length, empty: results.filter(x => x.status === 'empty').length, errors: results.filter(x => x.status === 'error').length, notLiveTested: ['Authenticated personalized recommendations', 'Private interests', 'REX Widget.tmdb transport and UI rendering'], results };
   fs.writeFileSync(output, JSON.stringify(summary, null, 2));
   console.log(JSON.stringify({ ...summary, results: undefined }));
   console.log('Evidence:', output);
